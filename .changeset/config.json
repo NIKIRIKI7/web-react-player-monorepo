@@ -10,7 +10,7 @@
     }
   ],
   "commit": false,
-  "ignore": [],
+  "ignore": ["playground"],
   "fixed": [],
   "linked": [],
   "updateInternalDependencies": "patch"

@@ -23,7 +23,10 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "lint:fix": "biome check --write src",
+    "test": "echo \"No tests specified for this package yet\""
   },
   "devDependencies": {
     "typescript": "^5.8.2",

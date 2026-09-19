@@ -1,0 +1,13 @@
+[
+  {
+    "name": "@web-react-player/core",
+    "path": "packages/core/dist/index.js",
+    "limit": "10 kB"
+  },
+  {
+    "name": "@web-react-player/ui",
+    "path": "packages/ui/dist/index.js",
+    "limit": "25 kB",
+    "ignore": ["react", "react-dom", "@web-react-player/core"]
+  }
+]

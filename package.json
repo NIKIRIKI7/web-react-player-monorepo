@@ -3,14 +3,34 @@
   "private": true,
   "packageManager": "pnpm@12.4.2",
   "scripts": {
-    "build": "pnpm --filter \"@web-react-player/*\" build",
-    "dev": "pnpm --filter \"@web-react-player/*\" --parallel dev",
-    "typecheck": "pnpm --filter \"@web-react-player/*\" typecheck",
-    "clean": "pnpm -r exec rimraf dist"
+    "prepare": "husky",
+    "dev": "pnpm --filter \"./packages/**\" --parallel dev",
+    "dev:app": "pnpm --filter playground dev",
+    "build": "pnpm --filter \"./packages/**\" build",
+    "build:app": "pnpm --filter playground build",
+    "typecheck": "pnpm -r exec tsc --noEmit",
+    "clean": "pnpm -r exec node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "pnpm --filter \"./packages/**\" test",
+    "check:publint": "pnpm --filter \"./packages/**\" exec publint",
+    "check:attw": "pnpm --filter \"./packages/**\" exec attw --pack . --profile esm-only",
+    "check:size": "size-limit",
+    "check:packages": "pnpm build && pnpm check:publint && pnpm check:attw && pnpm check:size",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "2.5.14",
     "@changesets/cli": "^3.0.3",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@size-limit/preset-small-lib": "^14.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
     "publint": "^0.3.24",
+    "size-limit": "^14.0.0",
     "typescript": "^7.0.2"
   },
   "publishConfig": {

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  "root": false,
+  "extends": ["../../biome.json"],
+  "linter": {
+    "rules": {
+      "a11y": {
+        "recommended": true,
+        "useKeyWithClickEvents": "error"
+      },
+      "correctness": {
+        "useHookAtTopLevel": "error"
+      }
+    }
+  }
+}

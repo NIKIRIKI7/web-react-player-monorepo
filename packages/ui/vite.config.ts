@@ -17,12 +17,7 @@ export default defineConfig({
       fileName: () => 'index.js',
     },
     rollupOptions: {
-      external: [
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        '@web-react-player/core',
-      ],
+      external: ['react', 'react-dom', 'react/jsx-runtime', '@web-react-player/core'],
       output: {
         globals: {
           react: 'React',
