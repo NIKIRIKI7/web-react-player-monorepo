@@ -11,6 +11,15 @@
       "default": "./dist/index.js"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NIKIRIKI7/web-react-player-monorepo.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/NIKIRIKI7/web-react-player-monorepo#readme",
+  "bugs": {
+    "url": "https://github.com/NIKIRIKI7/web-react-player-monorepo/issues"
+  },
   "files": [
     "dist"
   ],
