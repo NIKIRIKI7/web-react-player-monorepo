@@ -2,3 +2,16 @@ node_modules
 .codecontextrc.json
 dist
 .changesets
+repomix-output.xml
+
+# Tool local state (Serena)
+.serena/
+
+# API Extractor temp reports (regenerated on build)
+packages/*/temp/
+
+# Generated repomix output
+*.xml
+
+# Generated typedoc API docs
+docs/api/

@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore build artifacts and lockfiles"
+paths = [
+  '''pnpm-lock\.yaml''',
+  '''dist/''',
+  '''\.changeset/'''
+]

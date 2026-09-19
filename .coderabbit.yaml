@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "ru-RU"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+  tools:
+    biome:
+      enabled: true
+chat:
+  auto_reply: true
+
+instructions: |
+  Вы — ведущий инженер, проверяющий код для open-source библиотеки веб-видеоплеера `@web-react-player`.
+  Стек: React 19, TypeScript, Biome, Pure ESM, Vite, pnpm monorepo.
+
+  Обращайте особое внимание на:
+  1. Утечки памяти: все `addEventListener` на `HTMLVideoElement` / `window` / `document` должны сниматься в cleanup-функциях `useEffect`.
+  2. Асинхронные ошибки: вызовы `video.play()` возвращают Promise — они должны быть безопасно обернуты в try/catch или `.catch()`.
+  3. Модульность: пакет `@web-react-player/core` ни при каких обстоятельствах не должен импортировать React или `@web-react-player/ui`.
+  4. Чистоту типов: запрещайте использование типа `any`. Требуйте безопасное сужение типов (`unknown` + type guards).
+  5. Доступность (a11y): контролы плеера (кнопки, слайдеры громкости) должны содержать ARIA-атрибуты и поддерживать фокус с клавиатуры.

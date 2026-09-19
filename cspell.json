@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.husky/**",
+    "**/.changeset/**",
+    "pnpm-lock.yaml",
+    "README.DEV.md",
+    "README.dev.md",
+    "*.DEV.md",
+    "repomix-output.*",
+    "*.api.md"
+  ],
+  "words": [
+    "biomejs",
+    "changeset",
+    "changesets",
+    "commitlint",
+    "depcruise",
+    "gitleaks",
+    "knip",
+    "mcniki",
+    "pip",
+    "publint",
+    "repomix",
+    "socketsecurity",
+    "stryker",
+    "syncpack",
+    "total-typescript",
+    "typedoc",
+    "vite",
+    "vitest",
+    "webm",
+    "webvtt"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://repomix.com/schemas/repomix-config-schema.json",
+  "instructionFilePath": ".repomix/instructions.md",
+  "output": {
+    "filePath": "repomix-full.xml",
+    "style": "xml",
+    "parsableStyle": true,
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "showLineNumbers": true
+  },
+  "include": [
+    "packages/**/*",
+    "apps/**/*",
+    "docs/api/**/*",
+    "tsconfig.base.json",
+    "biome.json",
+    "package.json"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/dist/**",
+      "**/node_modules/**",
+      "pnpm-lock.yaml",
+      ".husky/**",
+      ".changeset/**",
+      "repomix-*.xml",
+      "repomix-output.*",
+      "**/*.mp4",
+      "**/*.webm",
+      "**/*.svg",
+      "**/*.png"
+    ]
+  }
+}

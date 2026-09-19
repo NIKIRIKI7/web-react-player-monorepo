@@ -1,0 +1,25 @@
+{
+  "$schema": "https://repomix.com/schemas/repomix-config-schema.json",
+  "instructionFilePath": ".repomix/instructions.md",
+  "output": {
+    "filePath": "repomix-pure.xml",
+    "style": "xml",
+    "parsableStyle": true,
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "showLineNumbers": true
+  },
+  "include": ["packages/*/src/**/*", "apps/*/src/**/*"],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/*.json",
+      "**/*.config.*",
+      "docs/**",
+      "**/*.api.md"
+    ]
+  }
+}

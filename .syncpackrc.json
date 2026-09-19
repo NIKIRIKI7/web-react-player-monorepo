@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JamieMason/syncpack/master/schemas/syncpackrc.json",
+  "dependencyTypes": ["dev", "prod", "peer"],
+  "semverGroups": [
+    {
+      "range": "^",
+      "dependencies": ["**"],
+      "packages": ["**"]
+    }
+  ],
+  "versionGroups": [
+    {
+      "label": "Пакеты монорепозитория всегда используют workspace:*",
+      "dependencies": ["@web-react-player/*"],
+      "packages": ["**"],
+      "pinVersion": "workspace:*"
+    }
+  ]
+}

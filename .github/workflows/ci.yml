@@ -43,6 +43,15 @@ jobs:
       - name: Build Libraries
         run: pnpm build
 
+      - name: Run Syncpack (Dependency consistency)
+        run: pnpm check:syncpack
+
+      - name: Run Knip (Dead code & unused exports)
+        run: pnpm check:knip
+
+      - name: Run Dependency Cruiser (Architecture boundaries)
+        run: pnpm check:deps
+
       - name: Check Package Health (Publint, ATTW, Size)
         run: |
           pnpm check:publint
