@@ -1,0 +1,19 @@
+{
+  "name": "web-react-player-monorepo",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "scripts": {
+    "build": "pnpm --filter \"@web-react-player/*\" build",
+    "dev": "pnpm --filter \"@web-react-player/*\" --parallel dev",
+    "typecheck": "pnpm --filter \"@web-react-player/*\" typecheck",
+    "clean": "pnpm -r exec rimraf dist"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "publint": "^0.3.24",
+    "typescript": "^7.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
