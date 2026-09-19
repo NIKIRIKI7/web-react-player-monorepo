@@ -2,9 +2,19 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignoreDependencies": [
     "@arethetypeswrong/cli",
+    "@changesets/changelog-github",
     "@microsoft/api-extractor",
+    "fast-check",
     "publint",
     "react-dom",
     "@types/react-dom"
-  ]
+  ],
+  "workspaces": {
+    "packages/ui": {
+      "ignoreDependencies": ["@web-react-player/core", "react", "@types/react"]
+    },
+    "apps/playground": {
+      "ignoreDependencies": ["@web-react-player/core", "@web-react-player/ui"]
+    }
+  }
 }
