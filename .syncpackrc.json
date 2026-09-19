@@ -1,6 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/JamieMason/syncpack/master/schemas/syncpackrc.json",
-  "dependencyTypes": ["dev", "prod", "peer"],
+  "$schema": "https://unpkg.com/syncpack/schema.json",
   "semverGroups": [
     {
       "range": "^",
@@ -9,6 +8,13 @@
     }
   ],
   "versionGroups": [
+    {
+      "label": "React peer range intentionally supports both React 18 and 19",
+      "dependencies": ["react", "react-dom"],
+      "dependencyTypes": ["peer"],
+      "packages": ["**"],
+      "isIgnored": true
+    },
     {
       "label": "Пакеты монорепозитория всегда используют workspace:*",
       "dependencies": ["@web-react-player/*"],
