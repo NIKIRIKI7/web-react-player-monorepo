@@ -132,35 +132,31 @@ export function CaptionCustomizer({ isOpen, onClose }: CaptionCustomizerProps) {
           transform: 'translate(-50%, -50%)',
           width: isSmall ? '94%' : '88%',
           maxWidth: '380px',
-          // Constrained strictly to the player height, NEVER exceeds bounds
           maxHeight: 'calc(100% - 20px)',
-          overflowY: 'auto',
           backgroundColor: '#0f172a',
           border: '1px solid #334155',
           borderRadius: '10px',
-          padding: '12px 16px',
           color: '#f8fafc',
           boxShadow: '0 20px 30px rgba(0, 0, 0, 0.8)',
           zIndex: 90,
           fontFamily: 'sans-serif',
           boxSizing: 'border-box',
-          scrollbarWidth: 'thin',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        {/* Sticky Header: Never gets cut off */}
+        {/* Header - now a plain block, not sticky */}
         <div
           style={{
-            position: 'sticky',
-            top: -12,
             backgroundColor: '#0f172a',
-            paddingTop: '2px',
-            paddingBottom: '8px',
+            padding: '12px 16px 8px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1px solid #1e293b',
-            marginBottom: '10px',
             zIndex: 10,
+            flexShrink: 0,
           }}
         >
           <span style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>
@@ -169,6 +165,7 @@ export function CaptionCustomizer({ isOpen, onClose }: CaptionCustomizerProps) {
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close Subtitle Styles"
             style={{
               background: 'none',
               border: 'none',
@@ -183,224 +180,235 @@ export function CaptionCustomizer({ isOpen, onClose }: CaptionCustomizerProps) {
           </button>
         </div>
 
-        {/* Live Preview */}
-        <CaptionPreviewBox styles={localStyles} />
-
-        {/* Font Size */}
-        <div style={{ marginBottom: '10px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              display: 'block',
-              marginBottom: '4px',
-            }}
-          >
-            Font Size
-          </span>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {FONT_SIZES.map((size) => (
-              <button
-                key={size}
-                type="button"
-                onClick={() => updatePreference('fontSize', size)}
-                style={{
-                  flex: 1,
-                  padding: '4px 2px',
-                  borderRadius: '4px',
-                  border: '1px solid',
-                  borderColor: localStyles.fontSize === size ? '#38bdf8' : '#334155',
-                  backgroundColor: localStyles.fontSize === size ? '#0369a1' : '#1e293b',
-                  color: '#fff',
-                  fontSize: '11px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Text Color */}
-        <div style={{ marginBottom: '10px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              display: 'block',
-              marginBottom: '4px',
-            }}
-          >
-            Text Color
-          </span>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {COLOR_PRESETS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => updatePreference('textColor', color)}
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '50%',
-                  backgroundColor: color,
-                  border:
-                    localStyles.textColor === color ? '2.5px solid #38bdf8' : '1.5px solid #334155',
-                  cursor: 'pointer',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Background Color & Opacity */}
-        <div style={{ marginBottom: '10px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              display: 'block',
-              marginBottom: '4px',
-            }}
-          >
-            Background & Opacity
-          </span>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-            {BG_COLOR_PRESETS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => updatePreference('backgroundColor', color)}
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '4px',
-                  backgroundColor: color,
-                  border:
-                    localStyles.backgroundColor === color
-                      ? '2.5px solid #38bdf8'
-                      : '1.5px solid #334155',
-                  cursor: 'pointer',
-                }}
-              />
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {OPACITIES.map((opacity) => (
-              <button
-                key={opacity}
-                type="button"
-                onClick={() => updatePreference('backgroundOpacity', opacity)}
-                style={{
-                  flex: 1,
-                  padding: '3px 1px',
-                  borderRadius: '3px',
-                  border: '1px solid',
-                  borderColor: localStyles.backgroundOpacity === opacity ? '#38bdf8' : '#334155',
-                  backgroundColor:
-                    localStyles.backgroundOpacity === opacity ? '#0369a1' : '#1e293b',
-                  color: '#fff',
-                  fontSize: '10px',
-                  cursor: 'pointer',
-                }}
-              >
-                {Math.round(opacity * 100)}%
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Text Shadow Options */}
-        <div style={{ marginBottom: '10px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              display: 'block',
-              marginBottom: '4px',
-            }}
-          >
-            Edge Style
-          </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {SHADOW_OPTIONS.map((shadow) => (
-              <button
-                key={shadow}
-                type="button"
-                onClick={() => updatePreference('textShadow', shadow)}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  border: '1px solid',
-                  borderColor: localStyles.textShadow === shadow ? '#38bdf8' : '#334155',
-                  backgroundColor: localStyles.textShadow === shadow ? '#0369a1' : '#1e293b',
-                  color: '#fff',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {shadow.replace('-', ' ')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Font Family Selection */}
-        <div style={{ marginBottom: '14px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              display: 'block',
-              marginBottom: '4px',
-            }}
-          >
-            Font Family
-          </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {FONT_FAMILIES.map((family) => (
-              <button
-                key={family}
-                type="button"
-                onClick={() => updatePreference('fontFamily', family)}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  border: '1px solid',
-                  borderColor: localStyles.fontFamily === family ? '#38bdf8' : '#334155',
-                  backgroundColor: localStyles.fontFamily === family ? '#0369a1' : '#1e293b',
-                  color: '#fff',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {family.replace('-', ' ')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sticky Footer: Always accessible */}
+        {/* Scrollable Content - only this block scrolls */}
         <div
           style={{
-            position: 'sticky',
-            bottom: -12,
+            padding: '12px 16px',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarWidth: 'thin',
+            flex: 1,
+          }}
+        >
+          {/* Live Preview */}
+          <CaptionPreviewBox styles={localStyles} />
+
+          {/* Font Size */}
+          <div style={{ marginBottom: '10px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#94a3b8',
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Font Size
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {FONT_SIZES.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => updatePreference('fontSize', size)}
+                  style={{
+                    flex: 1,
+                    padding: '4px 2px',
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor: localStyles.fontSize === size ? '#38bdf8' : '#334155',
+                    backgroundColor: localStyles.fontSize === size ? '#0369a1' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Text Color */}
+          <div style={{ marginBottom: '10px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#94a3b8',
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Text Color
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {COLOR_PRESETS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => updatePreference('textColor', color)}
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: color,
+                    border:
+                      localStyles.textColor === color
+                        ? '2.5px solid #38bdf8'
+                        : '1.5px solid #334155',
+                    cursor: 'pointer',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Background Color & Opacity */}
+          <div style={{ marginBottom: '10px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#94a3b8',
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Background & Opacity
+            </span>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+              {BG_COLOR_PRESETS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => updatePreference('backgroundColor', color)}
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '4px',
+                    backgroundColor: color,
+                    border:
+                      localStyles.backgroundColor === color
+                        ? '2.5px solid #38bdf8'
+                        : '1.5px solid #334155',
+                    cursor: 'pointer',
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {OPACITIES.map((opacity) => (
+                <button
+                  key={opacity}
+                  type="button"
+                  onClick={() => updatePreference('backgroundOpacity', opacity)}
+                  style={{
+                    flex: 1,
+                    padding: '3px 1px',
+                    borderRadius: '3px',
+                    border: '1px solid',
+                    borderColor: localStyles.backgroundOpacity === opacity ? '#38bdf8' : '#334155',
+                    backgroundColor:
+                      localStyles.backgroundOpacity === opacity ? '#0369a1' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '10px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {Math.round(opacity * 100)}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Text Shadow Options */}
+          <div style={{ marginBottom: '10px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#94a3b8',
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Edge Style
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              {SHADOW_OPTIONS.map((shadow) => (
+                <button
+                  key={shadow}
+                  type="button"
+                  onClick={() => updatePreference('textShadow', shadow)}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor: localStyles.textShadow === shadow ? '#38bdf8' : '#334155',
+                    backgroundColor: localStyles.textShadow === shadow ? '#0369a1' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {shadow.replace('-', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Font Family Selection */}
+          <div style={{ marginBottom: '4px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#94a3b8',
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Font Family
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              {FONT_FAMILIES.map((family) => (
+                <button
+                  key={family}
+                  type="button"
+                  onClick={() => updatePreference('fontFamily', family)}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor: localStyles.fontFamily === family ? '#38bdf8' : '#334155',
+                    backgroundColor: localStyles.fontFamily === family ? '#0369a1' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {family.replace('-', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer - now a plain block, not sticky */}
+        <div
+          style={{
             backgroundColor: '#0f172a',
-            paddingTop: '8px',
-            paddingBottom: '2px',
+            padding: '10px 16px 12px',
             borderTop: '1px solid #1e293b',
             display: 'flex',
             justifyContent: 'space-between',
             zIndex: 10,
+            flexShrink: 0,
           }}
         >
           <button
