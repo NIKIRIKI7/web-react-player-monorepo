@@ -24,7 +24,6 @@ export class PlayerMachine {
   private context: PlayerContext = { ...INITIAL_CONTEXT };
   private listeners = new Set<PlayerListener>();
 
-  // Cached snapshot reference to satisfy useSyncExternalStore (Object.is equality)
   private snapshot: PlayerSnapshot = {
     status: this.status,
     context: { ...this.context },
@@ -36,84 +35,104 @@ export class PlayerMachine {
 
   public subscribe = (listener: PlayerListener): (() => void) => {
     this.listeners.add(listener);
-    // Do NOT invoke listener() synchronously here.
-    // React retrieves the initial value via getSnapshot().
     return () => {
       this.listeners.delete(listener);
     };
   };
 
-  public send(event: PlayerEvent): void {
-    // State Transitions
+  public send = (event: PlayerEvent): void => {
+    const prevStatus = this.status;
+    const prevContext = this.context;
+    let nextStatus = this.status;
+    const nextContext = { ...this.context };
+
     switch (this.status) {
       case 'idle':
         if (event.type === 'LOAD') {
-          this.status = 'loading';
-          this.context.src = event.src;
-          this.context.error = null;
+          nextStatus = 'loading';
+          nextContext.src = event.src;
+          nextContext.error = null;
         }
         break;
       case 'loading':
         if (event.type === 'METADATA_LOADED') {
-          this.status = 'ready';
-          this.context.duration = event.duration;
+          nextStatus = 'ready';
+          nextContext.duration = event.duration;
         } else if (event.type === 'ERROR') {
-          this.status = 'error';
-          this.context.error = event.error;
+          nextStatus = 'error';
+          nextContext.error = event.error;
         }
         break;
       case 'ready':
       case 'paused':
       case 'ended':
         if (event.type === 'PLAY') {
-          this.status = 'playing';
+          nextStatus = 'playing';
         }
         break;
       case 'playing':
         if (event.type === 'PAUSE') {
-          this.status = 'paused';
+          nextStatus = 'paused';
         } else if (event.type === 'WAITING') {
-          this.status = 'buffering';
+          nextStatus = 'buffering';
         } else if (event.type === 'ENDED') {
-          this.status = 'ended';
+          nextStatus = 'ended';
         }
         break;
       case 'buffering':
         if (event.type === 'CAN_PLAY' || event.type === 'PLAYING') {
-          this.status = 'playing';
+          nextStatus = 'playing';
         } else if (event.type === 'PAUSE') {
-          this.status = 'paused';
+          nextStatus = 'paused';
         }
         break;
     }
 
-    // Global events
     if (event.type === 'TIME_UPDATE') {
-      this.context.currentTime = event.currentTime;
-      this.context.currentFrame =
-        this.context.fps > 0 ? Math.round(event.currentTime * this.context.fps) : 0;
+      nextContext.currentTime = event.currentTime;
+      nextContext.currentFrame =
+        nextContext.fps > 0 ? Math.round(event.currentTime * nextContext.fps) : 0;
     } else if (event.type === 'SEEK_FRAME') {
-      this.context.currentFrame = event.frame;
-      this.context.currentTime = this.context.fps > 0 ? event.frame / this.context.fps : 0;
+      nextContext.currentFrame = event.frame;
+      nextContext.currentTime = nextContext.fps > 0 ? event.frame / nextContext.fps : 0;
     } else if (event.type === 'VOLUME_CHANGE') {
-      this.context.volume = event.volume;
-      this.context.muted = event.muted;
+      nextContext.volume = event.volume;
+      nextContext.muted = event.muted;
     } else if (event.type === 'ERROR') {
-      this.status = 'error';
-      this.context.error = event.error;
+      nextStatus = 'error';
+      nextContext.error = event.error;
     } else if (event.type === 'RESET') {
-      this.status = 'idle';
-      this.context = { ...INITIAL_CONTEXT };
+      nextStatus = 'idle';
+      Object.assign(nextContext, INITIAL_CONTEXT);
     }
 
-    // Update cached reference only when an event was processed
+    // Only update snapshot and notify if status or context actually changed
+    const hasStatusChanged = prevStatus !== nextStatus;
+    const hasContextChanged =
+      prevContext.src !== nextContext.src ||
+      prevContext.currentTime !== nextContext.currentTime ||
+      prevContext.duration !== nextContext.duration ||
+      prevContext.volume !== nextContext.volume ||
+      prevContext.muted !== nextContext.muted ||
+      prevContext.playbackRate !== nextContext.playbackRate ||
+      prevContext.fps !== nextContext.fps ||
+      prevContext.durationInFrames !== nextContext.durationInFrames ||
+      prevContext.currentFrame !== nextContext.currentFrame ||
+      prevContext.error !== nextContext.error;
+
+    if (!hasStatusChanged && !hasContextChanged) {
+      return;
+    }
+
+    this.status = nextStatus;
+    this.context = nextContext;
     this.snapshot = {
       status: this.status,
       context: { ...this.context },
     };
 
     this.notify();
-  }
+  };
 
   private notify(): void {
     for (const listener of this.listeners) {

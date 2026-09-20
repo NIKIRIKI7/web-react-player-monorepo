@@ -247,9 +247,6 @@ importers:
 
   apps/playground:
     dependencies:
-      '@web-react-player/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@web-react-player/ui':
         specifier: workspace:*
         version: link:../../packages/ui

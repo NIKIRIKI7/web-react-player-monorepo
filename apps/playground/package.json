@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@web-react-player/core": "workspace:*",
     "@web-react-player/ui": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

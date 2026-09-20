@@ -75,7 +75,7 @@ export class PlayerMachine {
     // (undocumented)
     getSnapshot: () => PlayerSnapshot;
     // (undocumented)
-    send(event: PlayerEvent): void;
+    send: (event: PlayerEvent) => void;
     // (undocumented)
     subscribe: (listener: PlayerListener) => (() => void);
 }

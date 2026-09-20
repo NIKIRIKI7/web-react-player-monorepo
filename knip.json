@@ -11,10 +11,10 @@
   ],
   "workspaces": {
     "packages/ui": {
-      "ignoreDependencies": ["@web-react-player/core", "react", "@types/react"]
+      "ignoreDependencies": []
     },
     "apps/playground": {
-      "ignoreDependencies": ["@web-react-player/core", "@web-react-player/ui"]
+      "ignoreDependencies": []
     }
   }
 }
