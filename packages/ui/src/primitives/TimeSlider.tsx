@@ -2,6 +2,13 @@ import { type ComponentProps, type PointerEvent, useRef, useState } from 'react'
 import { usePlayerContext } from '../context/PlayerContext';
 import { formatTime } from '../utils/formatTime';
 
+const MARKER_TRACK_COLORS: Record<string, string> = {
+  sponsor: '#ffd400',
+  intro: '#3b82f6',
+  outro: '#a855f7',
+  highlight: '#ef4444',
+};
+
 export interface TimeSliderProps extends Omit<ComponentProps<'div'>, 'onChange'> {
   thumbClassName?: string;
   trackClassName?: string;
@@ -140,7 +147,29 @@ export function TimeSlider({
           }}
         />
 
-        {/* 4. Chapter gaps / markers */}
+        {/* 4. Interactive marker segments (intro/sponsor/outro) on the track */}
+        {state.context.markers.map((marker) => {
+          const leftPercent = (marker.startTime / duration) * 100;
+          const widthPercent = Math.max(0, ((marker.endTime - marker.startTime) / duration) * 100);
+          return (
+            <div
+              key={`${marker.type}-${marker.startTime}-${marker.endTime}`}
+              style={{
+                position: 'absolute',
+                left: `${leftPercent}%`,
+                width: `${widthPercent}%`,
+                top: 0,
+                bottom: 0,
+                backgroundColor: marker.color ?? MARKER_TRACK_COLORS[marker.type] ?? '#9ca3af',
+                opacity: 0.85,
+                zIndex: 2,
+                pointerEvents: 'none',
+              }}
+            />
+          );
+        })}
+
+        {/* 5. Chapter gaps / markers */}
         {state.context.chapters.length > 1 &&
           state.context.chapters.slice(1).map((chapter) => {
             const leftPercent = (chapter.startTime / duration) * 100;
@@ -161,7 +190,7 @@ export function TimeSlider({
             );
           })}
 
-        {/* 5. Scrubber thumb */}
+        {/* 6. Scrubber thumb */}
         <div
           className={thumbClassName}
           style={{
@@ -175,7 +204,7 @@ export function TimeSlider({
         />
       </div>
 
-      {/* 6. Floating Hover Preview Tooltip (Clamped inside player boundaries) */}
+      {/* 7. Floating Hover Preview Tooltip (Clamped inside player boundaries) */}
       {isHovered && trackRef.current && (
         <div
           className={previewClassName}

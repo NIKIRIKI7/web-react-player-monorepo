@@ -18,6 +18,9 @@ export function ActionBezel({ className, style, ...props }: ActionBezelProps) {
     if (action.type === 'speed') label = `${action.value}`;
     if (action.type === 'mute') label = 'MUTED';
     if (action.type === 'unmute') label = 'UNMUTED';
+    if (action.type === 'brightness') label = `☀ ${action.value}`;
+    if (action.type === 'audio_gain') label = `🔊 ${action.value}`;
+    if (action.type === 'long_press_speed') label = '>> 2x';
 
     setCurrentAction({ type: action.type, label });
 

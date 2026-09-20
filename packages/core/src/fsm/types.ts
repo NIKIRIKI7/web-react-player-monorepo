@@ -21,6 +21,14 @@ export interface CaptionCue {
   text: string;
 }
 
+export interface Marker {
+  type: 'sponsor' | 'intro' | 'outro' | 'highlight';
+  startTime: number;
+  endTime: number;
+  color?: string;
+  label?: string;
+}
+
 export interface PlayerActionRecord {
   type: string;
   value?: string | number;
@@ -48,14 +56,24 @@ export interface PlayerContext {
   durationInFrames: number;
   currentFrame: number;
   error: Error | null;
+  brightness: number;
+  audioGain: number;
+  isLongPressSpeedUp: boolean;
+  documentPip: boolean;
+  markers: Marker[];
+  activeMarker: Marker | null;
+  ambientMode: boolean;
+  smartPauseReason: 'visibility' | 'intersection' | null;
 }
 
 export type PlayerEvent =
-  | { type: 'LOAD'; src: string; chapters?: Chapter[]; captions?: CaptionCue[] }
-  | { type: 'METADATA_LOADED'; duration: number }
+  | { type: 'LOAD'; src: string; chapters?: Chapter[]; captions?: CaptionCue[]; markers?: Marker[] }
+  | { type: 'METADATA_LOADED'; duration: number; fps?: number }
   | { type: 'PLAY' }
   | { type: 'PLAYING' }
   | { type: 'PAUSE' }
+  | { type: 'SMART_PAUSE'; reason: 'visibility' | 'intersection' }
+  | { type: 'SMART_RESUME' }
   | { type: 'WAITING' }
   | { type: 'CAN_PLAY' }
   | { type: 'TIME_UPDATE'; currentTime: number; bufferedEnd?: number }
@@ -69,6 +87,13 @@ export type PlayerEvent =
   | { type: 'SET_CHAPTERS'; chapters: Chapter[] }
   | { type: 'SET_CAPTIONS'; captions: CaptionCue[] }
   | { type: 'ACTION_TRIGGERED'; action: PlayerActionRecord }
+  | { type: 'BRIGHTNESS_CHANGE'; brightness: number }
+  | { type: 'AUDIO_GAIN_CHANGE'; gain: number }
+  | { type: 'LONG_PRESS_SPEED_CHANGE'; isSpeedUp: boolean }
+  | { type: 'DOCUMENT_PIP_CHANGE'; documentPip: boolean }
+  | { type: 'TOGGLE_AMBIENT' }
+  | { type: 'SET_MARKERS'; markers: Marker[] }
+  | { type: 'HYDRATE_SETTINGS'; volume: number; playbackRate: number; ambientMode: boolean }
   | { type: 'ENDED' }
   | { type: 'ERROR'; error: Error }
   | { type: 'RESET' };
@@ -79,3 +104,9 @@ export interface PlayerSnapshot {
 }
 
 export type PlayerListener = (snapshot: PlayerSnapshot) => void;
+
+export type PlayerMiddleware = (
+  event: PlayerEvent,
+  snapshot: PlayerSnapshot,
+  next: (event: PlayerEvent) => void,
+) => void;

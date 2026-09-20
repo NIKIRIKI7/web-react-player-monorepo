@@ -30,6 +30,20 @@ export interface Chapter {
 export const createPlayerMachine: () => PlayerMachine;
 
 // @public (undocumented)
+export interface Marker {
+    // (undocumented)
+    color?: string;
+    // (undocumented)
+    endTime: number;
+    // (undocumented)
+    label?: string;
+    // (undocumented)
+    startTime: number;
+    // (undocumented)
+    type: 'sponsor' | 'intro' | 'outro' | 'highlight';
+}
+
+// @public (undocumented)
 export interface PlayerActionRecord {
     // (undocumented)
     timestamp: number;
@@ -46,6 +60,14 @@ export interface PlayerContext {
     // (undocumented)
     activeCue: CaptionCue | null;
     // (undocumented)
+    activeMarker: Marker | null;
+    // (undocumented)
+    ambientMode: boolean;
+    // (undocumented)
+    audioGain: number;
+    // (undocumented)
+    brightness: number;
+    // (undocumented)
     bufferedEnd: number;
     // (undocumented)
     captions: CaptionCue[];
@@ -58,6 +80,8 @@ export interface PlayerContext {
     // (undocumented)
     currentTime: number;
     // (undocumented)
+    documentPip: boolean;
+    // (undocumented)
     duration: number;
     // (undocumented)
     durationInFrames: number;
@@ -68,13 +92,19 @@ export interface PlayerContext {
     // (undocumented)
     fullscreen: boolean;
     // (undocumented)
+    isLongPressSpeedUp: boolean;
+    // (undocumented)
     lastAction: PlayerActionRecord | null;
+    // (undocumented)
+    markers: Marker[];
     // (undocumented)
     muted: boolean;
     // (undocumented)
     pip: boolean;
     // (undocumented)
     playbackRate: number;
+    // (undocumented)
+    smartPauseReason: 'visibility' | 'intersection' | null;
     // (undocumented)
     src: string | null;
     // (undocumented)
@@ -89,15 +119,22 @@ export type PlayerEvent = {
     src: string;
     chapters?: Chapter[];
     captions?: CaptionCue[];
+    markers?: Marker[];
 } | {
     type: 'METADATA_LOADED';
     duration: number;
+    fps?: number;
 } | {
     type: 'PLAY';
 } | {
     type: 'PLAYING';
 } | {
     type: 'PAUSE';
+} | {
+    type: 'SMART_PAUSE';
+    reason: 'visibility' | 'intersection';
+} | {
+    type: 'SMART_RESUME';
 } | {
     type: 'WAITING';
 } | {
@@ -136,6 +173,28 @@ export type PlayerEvent = {
     type: 'ACTION_TRIGGERED';
     action: PlayerActionRecord;
 } | {
+    type: 'BRIGHTNESS_CHANGE';
+    brightness: number;
+} | {
+    type: 'AUDIO_GAIN_CHANGE';
+    gain: number;
+} | {
+    type: 'LONG_PRESS_SPEED_CHANGE';
+    isSpeedUp: boolean;
+} | {
+    type: 'DOCUMENT_PIP_CHANGE';
+    documentPip: boolean;
+} | {
+    type: 'TOGGLE_AMBIENT';
+} | {
+    type: 'SET_MARKERS';
+    markers: Marker[];
+} | {
+    type: 'HYDRATE_SETTINGS';
+    volume: number;
+    playbackRate: number;
+    ambientMode: boolean;
+} | {
     type: 'ENDED';
 } | {
     type: 'ERROR';
@@ -150,12 +209,19 @@ export type PlayerListener = (snapshot: PlayerSnapshot) => void;
 // @public (undocumented)
 export class PlayerMachine {
     // (undocumented)
+    dispatch: (event: PlayerEvent) => void;
+    // (undocumented)
     getSnapshot: () => PlayerSnapshot;
     // (undocumented)
     send: (event: PlayerEvent) => void;
     // (undocumented)
     subscribe: (listener: PlayerListener) => (() => void);
+    // (undocumented)
+    use: (middleware: PlayerMiddleware) => (() => void);
 }
+
+// @public (undocumented)
+export type PlayerMiddleware = (event: PlayerEvent, snapshot: PlayerSnapshot, next: (event: PlayerEvent) => void) => void;
 
 // @public (undocumented)
 export interface PlayerSnapshot {

@@ -1,18 +1,25 @@
 import {
   ActionBezel,
+  AmbientBackground,
   type CaptionCue,
   Captions,
   type Chapter,
+  DocumentPipPortal,
   FullscreenButton,
-  MuteButton,
+  InteractiveMarkers,
+  type Marker,
+  Match,
+  MediaProvider,
   PIPButton,
   PlayButton,
+  PlayerDebug,
   PlayerProvider,
   Root,
   ScreenGestures,
   TimeDisplay,
   TimeSlider,
   usePlayerContext,
+  VolumeControl,
 } from '@web-react-player/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -59,6 +66,14 @@ const SAMPLE_CAPTIONS: CaptionCue[] = [
   { startTime: 250, endTime: 300, text: 'Watch out on the left flank! They have pointy sticks!' },
 ];
 
+// Sections that can be skipped / annotated on the timeline (markers demo)
+const SAMPLE_MARKERS: Marker[] = [
+  { type: 'intro', startTime: 0, endTime: 6 },
+  { type: 'highlight', startTime: 200, endTime: 240, label: 'The Gathering Circle' },
+  { type: 'sponsor', startTime: 370, endTime: 405, label: 'Raid Shadow Legends' },
+  { type: 'outro', startTime: 615, endTime: 620 },
+];
+
 interface LogEntry {
   id: number;
   time: string;
@@ -83,6 +98,7 @@ function VideoMedia({ onLog }: { onLog: (source: LogEntry['source'], msg: string
       src: SAMPLE_VIDEO_SRC,
       chapters: SAMPLE_CHAPTERS,
       captions: SAMPLE_CAPTIONS,
+      markers: SAMPLE_MARKERS,
     });
 
     const handleLoadedMetadata = () => {
@@ -228,9 +244,10 @@ function VideoMedia({ onLog }: { onLog: (source: LogEntry['source'], msg: string
       album: 'Web React Player Demo',
       artwork: [
         {
-          src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500',
+          // Stable frame from the video itself (Mux) instead of Unsplash
+          src: 'https://image.mux.com/VZtzUzGRv02OhRnZCxcNg49OilvolTqdnFLEqBsTwaxU/thumbnail.webp?time=268&width=512',
           sizes: '512x512',
-          type: 'image/jpeg',
+          type: 'image/webp',
         },
       ],
     });
@@ -255,15 +272,11 @@ function VideoMedia({ onLog }: { onLog: (source: LogEntry['source'], msg: string
   }, [actions]);
 
   return (
-    // biome-ignore lint/a11y/useMediaCaption: captions are rendered by Headless Captions component
-    <video
-      ref={(el) => {
-        videoRef.current = el;
-      }}
+    <MediaProvider
       src={SAMPLE_VIDEO_SRC}
-      crossOrigin="anonymous"
       playsInline
       preload="auto"
+      crossOrigin="anonymous"
       style={{
         width: '100%',
         height: '100%',
@@ -273,6 +286,45 @@ function VideoMedia({ onLog }: { onLog: (source: LogEntry['source'], msg: string
       }}
     />
   );
+}
+
+// Smart Autopause: pauses when the tab is hidden or the player scrolls out of
+// view, resumes automatically when it comes back (SMART_PAUSE/SMART_RESUME).
+function SmartAutopauseController() {
+  const { actions, rootRef, state } = usePlayerContext();
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        if (state.status === 'playing') actions.pause('visibility');
+      } else if (state.status === 'paused' && state.context.smartPauseReason === 'visibility') {
+        void actions.play(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [actions, state.status, state.context.smartPauseReason]);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        if (!entry.isIntersecting) {
+          if (state.status === 'playing') actions.pause('intersection');
+        } else if (state.status === 'paused' && state.context.smartPauseReason === 'intersection') {
+          void actions.play(true);
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [actions, rootRef, state.status, state.context.smartPauseReason]);
+
+  return null;
 }
 
 export const App = () => {
@@ -304,26 +356,43 @@ export const App = () => {
         </p>
       </header>
 
-      <PlayerProvider initialChapters={SAMPLE_CHAPTERS} initialCaptions={SAMPLE_CAPTIONS}>
-        <Root
-          style={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: '16 / 9',
-            backgroundColor: '#000000',
-            borderRadius: 12,
-            overflow: 'hidden',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          <VideoMedia onLog={addLog} />
-          {/* Screen gestures overlay handles single click play/pause and double-click seek */}
-          <ScreenGestures />
-          <Captions />
-          <ActionBezel />
-          <CenterBigPlayButton />
-          <PlayerOverlayControls onLog={addLog} />
-        </Root>
+      <PlayerProvider
+        initialChapters={SAMPLE_CHAPTERS}
+        initialCaptions={SAMPLE_CAPTIONS}
+        initialMarkers={SAMPLE_MARKERS}
+      >
+        {/* Outer relative wrapper; the Ambient glow sits BEHIND the player box */}
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9' }}>
+          {/* Blurred frame painted behind the player, bleeding around its edges */}
+          <AmbientBackground />
+
+          {/* Document PiP moves the WHOLE player (video + overlays) to a pop-out window */}
+          <DocumentPipPortal>
+            <Root
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#000000',
+                borderRadius: 12,
+                overflow: 'hidden',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                zIndex: 1,
+              }}
+            >
+              <VideoMedia onLog={addLog} />
+              {/* Screen gestures overlay handles single click play/pause and double-click seek */}
+              <ScreenGestures />
+              <Captions />
+              <ActionBezel />
+              <InteractiveMarkers />
+              <CenterBigPlayButton />
+              <SmartAutopauseController />
+              <PlayerOverlayControls onLog={addLog} />
+              <PlayerDebug />
+            </Root>
+          </DocumentPipPortal>
+        </div>
 
         <Dashboard
           logs={filteredLogs}
@@ -457,6 +526,48 @@ function PlayerOverlayControls({
             </>
           )}
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => {
+              actions.toggleAmbient();
+              onLog('FSM', `Ambient mode toggled: ${!state.context.ambientMode}`);
+            }}
+            aria-pressed={state.context.ambientMode}
+            style={{
+              background: state.context.ambientMode ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontSize: 11,
+              padding: '4px 8px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Ambient
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              actions.toggleDocumentPip();
+              onLog('FSM', `Document PiP toggled: ${!state.context.documentPip}`);
+            }}
+            aria-pressed={state.context.documentPip}
+            style={{
+              background: state.context.documentPip ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontSize: 11,
+              padding: '4px 8px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Doc PiP
+          </button>
+        </div>
       </div>
 
       {/* Bottom Bar: Interactive */}
@@ -479,25 +590,10 @@ function PlayerOverlayControls({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Play/Pause Button with SVG icons */}
             <PlayButton style={{ flexShrink: 0 }} />
 
-            {/* Mute Button with SVG icon */}
-            <MuteButton style={{ flexShrink: 0 }} />
-
-            {/* YouTube-like volume slider (hidden on narrow screens) */}
-            {!isSmall && (
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={state.context.muted ? 0 : state.context.volume}
-                onChange={(e) => actions.setVolume(Number.parseFloat(e.target.value))}
-                style={{ width: 70, accentColor: '#ff0000', cursor: 'pointer' }}
-                aria-label="Volume slider"
-              />
-            )}
+            {/* Expandable Volume from YouTube + AudioBoost up to 300% */}
+            <VolumeControl />
 
             <div
               style={{ display: 'flex', gap: 4, fontVariantNumeric: 'tabular-nums', fontSize: 13 }}
@@ -585,7 +681,9 @@ function PlayerOverlayControls({
             </button>
 
             <PIPButton style={{ flexShrink: 0 }} />
-            <FullscreenButton style={{ flexShrink: 0 }} />
+            <Match media="lg">
+              <FullscreenButton style={{ flexShrink: 0 }} />
+            </Match>
           </div>
         </div>
       </div>

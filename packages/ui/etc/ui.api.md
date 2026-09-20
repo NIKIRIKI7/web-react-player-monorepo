@@ -7,17 +7,42 @@
 import { CaptionCue } from '@web-react-player/core';
 import { Chapter } from '@web-react-player/core';
 import { ComponentProps } from 'react';
+import { CSSProperties } from 'react';
+import { ForwardRefExoticComponent } from 'react';
 import { JSX } from 'react';
+import { Marker } from '@web-react-player/core';
 import { PlayerActionRecord } from '@web-react-player/core';
 import { PlayerEvent } from '@web-react-player/core';
+import { PlayerListener } from '@web-react-player/core';
+import { PlayerMiddleware } from '@web-react-player/core';
 import { PlayerSnapshot } from '@web-react-player/core';
+import { PlayerStatus } from '@web-react-player/core';
 import { ReactNode } from 'react';
+import { ReactPortal } from 'react';
+import { Ref } from 'react';
+import { RefAttributes } from 'react';
+import { SyntheticEvent } from 'react';
 
 // @public (undocumented)
 export function ActionBezel(input: ActionBezelProps): JSX.Element | null;
 
 // @public (undocumented)
 export interface ActionBezelProps extends ComponentProps<'div'> {
+}
+
+// @public (undocumented)
+export function AmbientBackground(input: AmbientBackgroundProps): JSX.Element | null;
+
+// @public (undocumented)
+export interface AmbientBackgroundProps {
+    // (undocumented)
+    blur?: number;
+    // (undocumented)
+    fps?: number;
+    // (undocumented)
+    opacity?: number;
+    // (undocumented)
+    saturate?: number;
 }
 
 export { CaptionCue }
@@ -32,6 +57,19 @@ export interface CaptionsProps extends ComponentProps<'section'> {
 export { Chapter }
 
 // @public (undocumented)
+export function DocumentPipPortal(input: DocumentPipPortalProps): JSX.Element;
+
+// @public (undocumented)
+export interface DocumentPipPortalProps {
+    // (undocumented)
+    children: ReactNode;
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    width?: number;
+}
+
+// @public (undocumented)
 export function formatTime(seconds: number): string;
 
 // @public (undocumented)
@@ -39,6 +77,45 @@ export function FullscreenButton(input: FullscreenButtonProps): JSX.Element;
 
 // @public (undocumented)
 export interface FullscreenButtonProps extends ComponentProps<'button'> {
+}
+
+// @public (undocumented)
+export function InteractiveMarkers(input: InteractiveMarkersProps): JSX.Element | null;
+
+// @public (undocumented)
+export interface InteractiveMarkersProps {
+    // (undocumented)
+    className?: string;
+    // (undocumented)
+    style?: CSSProperties;
+}
+
+export { Marker }
+
+// @public (undocumented)
+export function Match(input: MatchProps): JSX.Element | null;
+
+// @public (undocumented)
+export type MatchMedia = 'sm' | 'lg';
+
+// @public (undocumented)
+export interface MatchProps {
+    // (undocumented)
+    children: ReactNode | ((isMatched: boolean) => ReactNode);
+    // (undocumented)
+    media: MatchMedia;
+}
+
+// @public (undocumented)
+function MediaProvider_2(input: MediaProviderProps): JSX.Element;
+export { MediaProvider_2 as MediaProvider }
+
+// @public (undocumented)
+export interface MediaProviderProps extends ComponentProps<'video'> {
+    // (undocumented)
+    src: string;
+    // (undocumented)
+    type?: 'video' | 'hls' | 'remotion';
 }
 
 // @public (undocumented)
@@ -60,6 +137,8 @@ export function PlayButton(input: PlayButtonProps): JSX.Element;
 
 // @public (undocumented)
 export interface PlayButtonProps extends ComponentProps<'button'> {
+    // (undocumented)
+    asChild?: boolean;
 }
 
 export { PlayerActionRecord }
@@ -68,18 +147,23 @@ export { PlayerActionRecord }
 export interface PlayerContextValue {
     // (undocumented)
     actions: {
-        play: () => Promise<void>;
-        pause: () => void;
+        play: (smartResume?: boolean) => Promise<void>;
+        pause: (reason?: 'visibility' | 'intersection') => void;
         togglePlay: () => Promise<void>;
         seek: (time: number) => void;
         seekRelative: (seconds: number) => void;
         setVolume: (volume: number) => void;
+        setAudioGain: (gain: number) => void;
         toggleMute: () => void;
         setPlaybackRate: (rate: number) => void;
+        setBrightness: (level: number) => void;
+        setLongPressSpeedUp: (active: boolean) => void;
         toggleFullscreen: () => Promise<void>;
         togglePIP: () => Promise<void>;
         toggleTheater: () => void;
         toggleCaptions: () => void;
+        toggleAmbient: () => void;
+        toggleDocumentPip: () => void;
         triggerAction: (type: string, value?: string | number) => void;
     };
     // (undocumented)
@@ -101,11 +185,26 @@ export interface PlayerContextValue {
     // (undocumented)
     state: PlayerSnapshot;
     // (undocumented)
+    subscribe: (listener: PlayerListener) => () => void;
+    // (undocumented)
     videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
 // @public (undocumented)
-export function PlayerProvider(input: PlayerProviderProps): JSX.Element;
+export function PlayerDebug(input: PlayerDebugProps): ReactPortal | null;
+
+// @public (undocumented)
+export interface PlayerDebugProps {
+    // (undocumented)
+    enabled?: boolean;
+}
+
+export { PlayerEvent }
+
+export { PlayerMiddleware }
+
+// @public (undocumented)
+export function PlayerProvider(input: PlayerProviderProps): JSX.Element | null;
 
 // @public (undocumented)
 export interface PlayerProviderProps {
@@ -115,7 +214,13 @@ export interface PlayerProviderProps {
     initialCaptions?: CaptionCue[];
     // (undocumented)
     initialChapters?: Chapter[];
+    // (undocumented)
+    initialMarkers?: Marker[];
 }
+
+export { PlayerSnapshot }
+
+export { PlayerStatus }
 
 // @public (undocumented)
 export function Root(input: RootProps): JSX.Element;
@@ -135,6 +240,25 @@ export function ScreenGestures(input: ScreenGesturesProps): JSX.Element;
 
 // @public (undocumented)
 export interface ScreenGesturesProps extends ComponentProps<'div'> {
+}
+
+// @public (undocumented)
+export const Slot: ForwardRefExoticComponent<Omit<SlotProps, "ref"> & RefAttributes<unknown>>;
+
+// @public (undocumented)
+export interface SlotProps extends Record<string, unknown> {
+    // (undocumented)
+    children?: ReactNode;
+    // (undocumented)
+    className?: string;
+    // (undocumented)
+    onClick?: (event: SyntheticEvent) => void;
+    // (undocumented)
+    onPointerDown?: (event: SyntheticEvent) => void;
+    // (undocumented)
+    ref?: Ref<unknown>;
+    // (undocumented)
+    style?: CSSProperties;
 }
 
 // @public (undocumented)
@@ -168,6 +292,16 @@ export const UI_PACKAGE_READY = true;
 
 // @public (undocumented)
 export function usePlayerContext(): PlayerContextValue;
+
+// @public (undocumented)
+export function usePlayerState<T>(selector: (state: PlayerSnapshot) => T): T;
+
+// @public (undocumented)
+export function VolumeControl(input: VolumeControlProps): JSX.Element;
+
+// @public (undocumented)
+export interface VolumeControlProps extends ComponentProps<'fieldset'> {
+}
 
 // (No @packageDocumentation comment for this package)
 

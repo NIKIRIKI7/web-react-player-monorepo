@@ -134,6 +134,15 @@ export function Root({
           event.preventDefault();
           actions.toggleTheater();
           break;
+        // Frame-by-frame scrubbing (UX): a frame depends on the video fps (`,`, `.`)
+        case ',':
+          event.preventDefault();
+          actions.seekRelative(-1 / Math.max(1, state.context.fps));
+          break;
+        case '.':
+          event.preventDefault();
+          actions.seekRelative(1 / Math.max(1, state.context.fps));
+          break;
         case '>':
           event.preventDefault();
           actions.setPlaybackRate(Math.min(2, state.context.playbackRate + 0.25));
@@ -184,6 +193,20 @@ export function Root({
     };
   }, [send]);
 
+  // Publish player metrics as CSS custom properties so external overlays and
+  // styles can key off the playhead, buffered range or volume without re-rendering.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const duration = state.context.duration > 0 ? state.context.duration : 1;
+    const progress = (state.context.currentTime / duration) * 100;
+    const buffered = (state.context.bufferedEnd / duration) * 100;
+    const volume = state.context.volume * 100;
+    el.style.setProperty('--player-time-progress', `${progress}%`);
+    el.style.setProperty('--player-buffered', `${buffered}%`);
+    el.style.setProperty('--player-volume', `${volume}%`);
+  }, [state, rootRef]);
+
   return (
     <div
       ref={(el) => {
@@ -206,6 +229,9 @@ export function Root({
       data-controls-hidden={!controlsVisible ? '' : undefined}
       style={{
         ...style,
+        ...(state.context.brightness !== 1
+          ? { filter: `brightness(${state.context.brightness})` }
+          : {}),
         ...(state.context.fullscreen
           ? { width: '100vw', height: '100vh', aspectRatio: 'unset', borderRadius: 0 }
           : {}),
