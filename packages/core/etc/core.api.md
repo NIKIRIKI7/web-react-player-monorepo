@@ -52,12 +52,12 @@ export type PlayerEvent = {
     type: 'TIME_UPDATE';
     currentTime: number;
 } | {
-    type: 'SEEK_FRAME';
-    frame: number;
-} | {
     type: 'VOLUME_CHANGE';
     volume: number;
     muted: boolean;
+} | {
+    type: 'RATE_CHANGE';
+    playbackRate: number;
 } | {
     type: 'ENDED';
 } | {

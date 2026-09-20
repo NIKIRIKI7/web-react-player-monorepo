@@ -5,11 +5,14 @@ export interface MuteButtonProps extends ComponentProps<'button'> {}
 
 export function MuteButton({ ref, children, onClick, ...props }: MuteButtonProps) {
   const { state, send } = usePlayerContext();
-  const muted = state.context.muted;
+  const isMuted = state.context.muted;
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    // Dispatch volume change to FSM
-    send({ type: 'VOLUME_CHANGE', volume: state.context.volume, muted: !muted });
+    send({
+      type: 'VOLUME_CHANGE',
+      volume: state.context.volume,
+      muted: !isMuted,
+    });
     onClick?.(e);
   };
 
@@ -17,14 +20,14 @@ export function MuteButton({ ref, children, onClick, ...props }: MuteButtonProps
     <button
       ref={ref}
       type="button"
-      aria-label={muted ? 'Unmute' : 'Mute'}
-      aria-pressed={muted}
+      aria-label={isMuted ? 'Unmute' : 'Mute'}
+      aria-pressed={isMuted}
       onClick={handleClick}
       data-player-mute-button=""
-      data-muted={muted ? '' : undefined}
+      data-muted={isMuted ? '' : undefined}
       {...props}
     >
-      {children}
+      {children ?? (isMuted ? 'Unmute' : 'Mute')}
     </button>
   );
 }

@@ -30,8 +30,8 @@ export type PlayerEvent =
   | { type: 'WAITING' }
   | { type: 'CAN_PLAY' }
   | { type: 'TIME_UPDATE'; currentTime: number }
-  | { type: 'SEEK_FRAME'; frame: number }
   | { type: 'VOLUME_CHANGE'; volume: number; muted: boolean }
+  | { type: 'RATE_CHANGE'; playbackRate: number }
   | { type: 'ENDED' }
   | { type: 'ERROR'; error: Error }
   | { type: 'RESET' };

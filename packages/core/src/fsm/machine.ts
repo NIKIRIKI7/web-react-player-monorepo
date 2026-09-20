@@ -55,9 +55,14 @@ export class PlayerMachine {
         }
         break;
       case 'loading':
-        if (event.type === 'METADATA_LOADED') {
+        if (event.type === 'METADATA_LOADED' || event.type === 'CAN_PLAY') {
           nextStatus = 'ready';
-          nextContext.duration = event.duration;
+          if ('duration' in event && event.duration > 0) {
+            nextContext.duration = event.duration;
+            nextContext.durationInFrames = Math.round(event.duration * nextContext.fps);
+          }
+        } else if (event.type === 'PLAY' || event.type === 'PLAYING') {
+          nextStatus = 'playing';
         } else if (event.type === 'ERROR') {
           nextStatus = 'error';
           nextContext.error = event.error;
@@ -88,16 +93,17 @@ export class PlayerMachine {
         break;
     }
 
-    if (event.type === 'TIME_UPDATE') {
+    if (event.type === 'METADATA_LOADED') {
+      nextContext.duration = event.duration;
+      nextContext.durationInFrames = Math.round(event.duration * nextContext.fps);
+    } else if (event.type === 'TIME_UPDATE') {
       nextContext.currentTime = event.currentTime;
-      nextContext.currentFrame =
-        nextContext.fps > 0 ? Math.round(event.currentTime * nextContext.fps) : 0;
-    } else if (event.type === 'SEEK_FRAME') {
-      nextContext.currentFrame = event.frame;
-      nextContext.currentTime = nextContext.fps > 0 ? event.frame / nextContext.fps : 0;
+      nextContext.currentFrame = Math.round(event.currentTime * nextContext.fps);
     } else if (event.type === 'VOLUME_CHANGE') {
       nextContext.volume = event.volume;
       nextContext.muted = event.muted;
+    } else if (event.type === 'RATE_CHANGE') {
+      nextContext.playbackRate = event.playbackRate;
     } else if (event.type === 'ERROR') {
       nextStatus = 'error';
       nextContext.error = event.error;
@@ -106,7 +112,6 @@ export class PlayerMachine {
       Object.assign(nextContext, INITIAL_CONTEXT);
     }
 
-    // Only update snapshot and notify if status or context actually changed
     const hasStatusChanged = prevStatus !== nextStatus;
     const hasContextChanged =
       prevContext.src !== nextContext.src ||
