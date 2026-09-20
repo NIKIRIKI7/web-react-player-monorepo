@@ -73,11 +73,11 @@ export type PlayerListener = (snapshot: PlayerSnapshot) => void;
 // @public (undocumented)
 export class PlayerMachine {
     // (undocumented)
-    getSnapshot(): PlayerSnapshot;
+    getSnapshot: () => PlayerSnapshot;
     // (undocumented)
     send(event: PlayerEvent): void;
     // (undocumented)
-    subscribe(listener: PlayerListener): () => void;
+    subscribe: (listener: PlayerListener) => (() => void);
 }
 
 // @public (undocumented)

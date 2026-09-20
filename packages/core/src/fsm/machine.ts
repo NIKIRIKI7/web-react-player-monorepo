@@ -24,18 +24,24 @@ export class PlayerMachine {
   private context: PlayerContext = { ...INITIAL_CONTEXT };
   private listeners = new Set<PlayerListener>();
 
-  public getSnapshot(): PlayerSnapshot {
-    return {
-      status: this.status,
-      context: { ...this.context },
-    };
-  }
+  // Cached snapshot reference to satisfy useSyncExternalStore (Object.is equality)
+  private snapshot: PlayerSnapshot = {
+    status: this.status,
+    context: { ...this.context },
+  };
 
-  public subscribe(listener: PlayerListener): () => void {
+  public getSnapshot = (): PlayerSnapshot => {
+    return this.snapshot;
+  };
+
+  public subscribe = (listener: PlayerListener): (() => void) => {
     this.listeners.add(listener);
-    listener(this.getSnapshot());
-    return () => this.listeners.delete(listener);
-  }
+    // Do NOT invoke listener() synchronously here.
+    // React retrieves the initial value via getSnapshot().
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
 
   public send(event: PlayerEvent): void {
     // State Transitions
@@ -100,13 +106,18 @@ export class PlayerMachine {
       this.context = { ...INITIAL_CONTEXT };
     }
 
+    // Update cached reference only when an event was processed
+    this.snapshot = {
+      status: this.status,
+      context: { ...this.context },
+    };
+
     this.notify();
   }
 
   private notify(): void {
-    const snapshot = this.getSnapshot();
     for (const listener of this.listeners) {
-      listener(snapshot);
+      listener(this.snapshot);
     }
   }
 }
