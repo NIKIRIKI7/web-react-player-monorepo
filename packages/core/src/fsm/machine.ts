@@ -13,6 +13,9 @@ const INITIAL_CONTEXT: PlayerContext = {
   volume: 1,
   muted: false,
   playbackRate: 1,
+  fps: 30,
+  durationInFrames: 0,
+  currentFrame: 0,
   error: null,
 };
 
@@ -81,6 +84,11 @@ export class PlayerMachine {
     // Global events
     if (event.type === 'TIME_UPDATE') {
       this.context.currentTime = event.currentTime;
+      this.context.currentFrame =
+        this.context.fps > 0 ? Math.round(event.currentTime * this.context.fps) : 0;
+    } else if (event.type === 'SEEK_FRAME') {
+      this.context.currentFrame = event.frame;
+      this.context.currentTime = this.context.fps > 0 ? event.frame / this.context.fps : 0;
     } else if (event.type === 'VOLUME_CHANGE') {
       this.context.volume = event.volume;
       this.context.muted = event.muted;

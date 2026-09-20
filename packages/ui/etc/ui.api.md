@@ -4,8 +4,77 @@
 
 ```ts
 
+import { ComponentProps } from 'react';
+import { Context } from 'react';
+import { JSX } from 'react';
+import { PlayerEvent } from '@web-react-player/core';
+import { PlayerSnapshot } from '@web-react-player/core';
+import { ReactNode } from 'react';
+
 // @public (undocumented)
-export const UI_PACKAGE_READY = true;
+export function formatTime(seconds: number): string;
+
+// @public (undocumented)
+export function MuteButton(input: MuteButtonProps): JSX.Element;
+
+// @public (undocumented)
+export interface MuteButtonProps extends ComponentProps<'button'> {
+}
+
+// @public (undocumented)
+export function PlayButton(input: PlayButtonProps): JSX.Element;
+
+// @public (undocumented)
+export interface PlayButtonProps extends ComponentProps<'button'> {
+}
+
+// @public (undocumented)
+export const PlayerContext: Context<PlayerContextValue | null>;
+
+// @public (undocumented)
+export interface PlayerContextValue {
+    // (undocumented)
+    send: (event: PlayerEvent) => void;
+    // (undocumented)
+    state: PlayerSnapshot;
+}
+
+// @public (undocumented)
+export function PlayerProvider(input: PlayerProviderProps): JSX.Element;
+
+// @public (undocumented)
+export interface PlayerProviderProps {
+    // (undocumented)
+    children: ReactNode;
+}
+
+// @public (undocumented)
+export function Root(input: RootProps): JSX.Element;
+
+// @public (undocumented)
+export interface RootProps extends ComponentProps<'div'> {
+    // (undocumented)
+    keyboardShortcuts?: boolean;
+}
+
+// @public (undocumented)
+export function TimeDisplay(input: TimeDisplayProps): JSX.Element;
+
+// @public (undocumented)
+export interface TimeDisplayProps extends ComponentProps<'div'> {
+    // (undocumented)
+    type?: 'current' | 'duration' | 'remaining';
+}
+
+// @public (undocumented)
+export function TimeSlider(input: TimeSliderProps): JSX.Element;
+
+// @public (undocumented)
+export interface TimeSliderProps extends Omit<ComponentProps<'input'>, 'type' | 'value' | 'min' | 'max'> {
+}
+
+// @public (undocumented)
+export function usePlayerContext(): PlayerContextValue;
 
 // (No @packageDocumentation comment for this package)
 

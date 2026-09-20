@@ -16,6 +16,7 @@ export default defineConfig({
       formats: ['es'],
       fileName: () => 'index.js',
     },
+    rollupOptions: {},
     sourcemap: true,
     minify: false,
   },

@@ -10,11 +10,17 @@ export const createPlayerMachine: () => PlayerMachine;
 // @public (undocumented)
 export interface PlayerContext {
     // (undocumented)
+    currentFrame: number;
+    // (undocumented)
     currentTime: number;
     // (undocumented)
     duration: number;
     // (undocumented)
+    durationInFrames: number;
+    // (undocumented)
     error: Error | null;
+    // (undocumented)
+    fps: number;
     // (undocumented)
     muted: boolean;
     // (undocumented)
@@ -45,6 +51,9 @@ export type PlayerEvent = {
 } | {
     type: 'TIME_UPDATE';
     currentTime: number;
+} | {
+    type: 'SEEK_FRAME';
+    frame: number;
 } | {
     type: 'VOLUME_CHANGE';
     volume: number;
