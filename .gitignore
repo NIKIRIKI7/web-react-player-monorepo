@@ -15,3 +15,6 @@ packages/*/temp/
 
 # Generated typedoc API docs
 docs/api/
+
+# JetBrains IDE
+.idea/
