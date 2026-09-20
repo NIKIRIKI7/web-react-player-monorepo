@@ -6,6 +6,7 @@ import {
   type PlayerEvent,
   type PlayerListener,
   type PlayerSnapshot,
+  type VideoQuality,
 } from '@web-react-player/core';
 import {
   createContext,
@@ -33,8 +34,11 @@ export interface PlayerContextValue {
   setIsScrubbing: (scrubbing: boolean) => void;
   isSmall: boolean;
   setIsSmall: (isSmall: boolean) => void;
+  tier: ContainerTier;
   captionStyles: CaptionStylePreferences;
   setCaptionStyles: (styles: CaptionStylePreferences) => void;
+  activeMenu: string | null;
+  setActiveMenu: (menu: string | null) => void;
   actions: {
     play: (smartResume?: boolean) => Promise<void>;
     pause: (reason?: 'visibility' | 'intersection') => void;
@@ -54,6 +58,7 @@ export interface PlayerContextValue {
     toggleAmbient: () => void;
     toggleDocumentPip: () => void;
     triggerAction: (type: string, value?: string | number) => void;
+    setQuality: (qualityId: string | 'auto') => void;
   };
 }
 
@@ -61,6 +66,23 @@ const PlayerContext = createContext<PlayerContextValue | null>(null);
 
 // Duration (in seconds) of the smart-pause audio fade in/out.
 const FADE_DURATION = 0.3;
+
+// Responsive container tiers let the player UI adapt its density to the
+// available width: the full control set only fits wide players, while narrow
+// ones collapse it step by step to avoid overflowing the bottom bar.
+export type ContainerTier = 'xl' | 'lg' | 'md' | 'sm' | 'xs';
+
+// Breakpoints follow a YouTube-like density ladder.
+export function getContainerTier(width: number): ContainerTier {
+  if (width >= 800) return 'xl';
+  if (width >= 660) return 'lg';
+  if (width >= 520) return 'md';
+  if (width >= 360) return 'sm';
+  return 'xs';
+}
+
+// Width (px) below which the player switches to the compact ("small") layout.
+const SMALL_WHEN_WIDTH = 580;
 
 export function usePlayerContext(): PlayerContextValue {
   const context = use(PlayerContext);
@@ -91,6 +113,7 @@ export interface PlayerProviderProps {
   initialChapters?: Chapter[];
   initialCaptions?: CaptionCue[];
   initialMarkers?: Marker[];
+  initialQualities?: VideoQuality[];
 }
 
 export function PlayerProvider({
@@ -98,12 +121,14 @@ export function PlayerProvider({
   initialChapters,
   initialCaptions,
   initialMarkers,
+  initialQualities,
 }: PlayerProviderProps) {
   const machine = useMemo(() => {
     const inst = createPlayerMachine();
     if (initialChapters) inst.send({ type: 'SET_CHAPTERS', chapters: initialChapters });
     if (initialCaptions) inst.send({ type: 'SET_CAPTIONS', captions: initialCaptions });
     if (initialMarkers) inst.send({ type: 'SET_MARKERS', markers: initialMarkers });
+    if (initialQualities) inst.send({ type: 'SET_QUALITIES', qualities: initialQualities });
     // Middleware plugin example: surface engine-level errors in the console.
     inst.use((event, snapshot, next) => {
       if (event.type === 'ERROR') {
@@ -112,7 +137,7 @@ export function PlayerProvider({
       next(event);
     });
     return inst;
-  }, [initialChapters, initialCaptions, initialMarkers]);
+  }, [initialChapters, initialCaptions, initialMarkers, initialQualities]);
 
   const state = useSyncExternalStore(machine.subscribe, machine.getSnapshot, machine.getSnapshot);
 
@@ -133,7 +158,12 @@ export function PlayerProvider({
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [isSmall, setIsSmall] = useState(false);
+  const [tier, setTier] = useState<ContainerTier>('xl');
   const [hydrated, setHydrated] = useState(false);
+
+  // Active menu coordinator (quality, captions, etc.) so overlapping floating
+  // controls (e.g. the Skip pill) can yield to whichever menu is open.
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   // Autonomous caption style preference (persisted separately from volume so it
   // survives across sessions and videos).
@@ -193,6 +223,26 @@ export function PlayerProvider({
     }
     setHydrated(true);
   }, [send]);
+
+  // Track the player's container width and publish the responsive tier. The
+  // root element is only mounted after hydration, so the observer attaches once
+  // the subtree exists (keyed on `hydrated`) and then follows resizes.
+  useEffect(() => {
+    if (!hydrated) return;
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const width = entry.contentRect.width;
+        setIsSmall(width < SMALL_WHEN_WIDTH);
+        setTier(getContainerTier(width));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hydrated]);
 
   // Haptic Feedback on chapter change (UX)
   useEffect(() => {
@@ -501,6 +551,40 @@ export function PlayerProvider({
     triggerAction('document_pip', next ? 'on' : 'off');
   }, [send, triggerAction]);
 
+  // Seamless quality switcher: swaps the source and preserves both the
+  // playback position and the current playing state of the media element.
+  const setQuality = useCallback(
+    (qualityId: string | 'auto') => {
+      const isAuto = qualityId === 'auto';
+      const qualities = stateRef.current.context.qualities;
+      const target = isAuto ? null : (qualities.find((q) => q.id === qualityId) ?? null);
+      const video = videoRef.current;
+
+      // Handle seamless source swap for multi-bitrate progressive MP4 streams
+      if (video && target?.src && target.src !== video.src) {
+        const prevTime = video.currentTime;
+        const isPlaying = !video.paused;
+
+        video.src = target.src;
+        video.currentTime = prevTime;
+
+        if (isPlaying) {
+          video.play().catch(() => {});
+        }
+      }
+
+      send({
+        type: 'QUALITY_CHANGE',
+        quality: target,
+        auto: isAuto,
+      });
+
+      const label = isAuto ? 'Auto' : target?.label || `${target?.height}p`;
+      triggerAction('quality', label);
+    },
+    [send, triggerAction],
+  );
+
   // Actions are completely stable and never recreate
   const actions = useMemo(
     () => ({
@@ -522,6 +606,7 @@ export function PlayerProvider({
       toggleAmbient,
       toggleDocumentPip,
       triggerAction,
+      setQuality,
     }),
     [
       play,
@@ -542,6 +627,7 @@ export function PlayerProvider({
       toggleAmbient,
       toggleDocumentPip,
       triggerAction,
+      setQuality,
     ],
   );
 
@@ -558,8 +644,11 @@ export function PlayerProvider({
       setIsScrubbing,
       isSmall,
       setIsSmall,
+      tier,
       captionStyles,
       setCaptionStyles,
+      activeMenu,
+      setActiveMenu,
       actions,
     }),
     [
@@ -569,8 +658,10 @@ export function PlayerProvider({
       controlsVisible,
       isScrubbing,
       isSmall,
+      tier,
       captionStyles,
       setCaptionStyles,
+      activeMenu,
       actions,
     ],
   );

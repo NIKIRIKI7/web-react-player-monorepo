@@ -39,6 +39,11 @@ const INITIAL_CONTEXT: PlayerContext = {
   activeMarker: null,
   ambientMode: true,
   smartPauseReason: null,
+
+  // Initial Quality settings
+  qualities: [],
+  currentQuality: null,
+  autoQuality: true,
 };
 
 function findActiveChapter(chapters: Chapter[], time: number): Chapter | null {
@@ -144,6 +149,10 @@ export class PlayerMachine {
             nextContext.markers = event.markers;
             nextContext.activeMarker = findActiveMarker(event.markers, nextContext.currentTime);
           }
+          if (event.qualities) {
+            nextContext.qualities = event.qualities;
+            nextContext.currentQuality = event.qualities[0] || null;
+          }
         }
         break;
       case 'loading':
@@ -235,6 +244,11 @@ export class PlayerMachine {
     } else if (event.type === 'SET_MARKERS') {
       nextContext.markers = event.markers;
       nextContext.activeMarker = findActiveMarker(event.markers, nextContext.currentTime);
+    } else if (event.type === 'SET_QUALITIES') {
+      nextContext.qualities = event.qualities;
+    } else if (event.type === 'QUALITY_CHANGE') {
+      nextContext.currentQuality = event.quality;
+      nextContext.autoQuality = event.auto ?? false;
     } else if (event.type === 'DOCUMENT_PIP_CHANGE') {
       nextContext.documentPip = event.documentPip;
     } else if (event.type === 'TOGGLE_AMBIENT') {
@@ -288,7 +302,10 @@ export class PlayerMachine {
       prevContext.markers !== nextContext.markers ||
       prevContext.activeMarker !== nextContext.activeMarker ||
       prevContext.ambientMode !== nextContext.ambientMode ||
-      prevContext.smartPauseReason !== nextContext.smartPauseReason;
+      prevContext.smartPauseReason !== nextContext.smartPauseReason ||
+      prevContext.qualities !== nextContext.qualities ||
+      prevContext.currentQuality !== nextContext.currentQuality ||
+      prevContext.autoQuality !== nextContext.autoQuality;
 
     if (!hasStatusChanged && !hasContextChanged) {
       return;

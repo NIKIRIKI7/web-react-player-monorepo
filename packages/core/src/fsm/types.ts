@@ -35,6 +35,16 @@ export interface PlayerActionRecord {
   timestamp: number;
 }
 
+// Video Quality definition
+export interface VideoQuality {
+  id: string; // e.g. '1080p', '720p', '480p'
+  height: number;
+  width?: number;
+  bitrate?: number;
+  label?: string;
+  src?: string; // Optional direct source URL for multi-quality MP4 switching
+}
+
 export interface PlayerContext {
   src: string | null;
   currentTime: number;
@@ -64,10 +74,22 @@ export interface PlayerContext {
   activeMarker: Marker | null;
   ambientMode: boolean;
   smartPauseReason: 'visibility' | 'intersection' | null;
+
+  // Quality State
+  qualities: VideoQuality[];
+  currentQuality: VideoQuality | null;
+  autoQuality: boolean;
 }
 
 export type PlayerEvent =
-  | { type: 'LOAD'; src: string; chapters?: Chapter[]; captions?: CaptionCue[]; markers?: Marker[] }
+  | {
+      type: 'LOAD';
+      src: string;
+      chapters?: Chapter[];
+      captions?: CaptionCue[];
+      markers?: Marker[];
+      qualities?: VideoQuality[];
+    }
   | { type: 'METADATA_LOADED'; duration: number; fps?: number }
   | { type: 'PLAY' }
   | { type: 'PLAYING' }
@@ -93,6 +115,8 @@ export type PlayerEvent =
   | { type: 'DOCUMENT_PIP_CHANGE'; documentPip: boolean }
   | { type: 'TOGGLE_AMBIENT' }
   | { type: 'SET_MARKERS'; markers: Marker[] }
+  | { type: 'SET_QUALITIES'; qualities: VideoQuality[] }
+  | { type: 'QUALITY_CHANGE'; quality: VideoQuality | null; auto?: boolean }
   | { type: 'HYDRATE_SETTINGS'; volume: number; playbackRate: number; ambientMode: boolean }
   | { type: 'ENDED' }
   | { type: 'ERROR'; error: Error }

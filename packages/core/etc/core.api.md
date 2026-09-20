@@ -66,6 +66,8 @@ export interface PlayerContext {
     // (undocumented)
     audioGain: number;
     // (undocumented)
+    autoQuality: boolean;
+    // (undocumented)
     brightness: number;
     // (undocumented)
     bufferedEnd: number;
@@ -77,6 +79,8 @@ export interface PlayerContext {
     chapters: Chapter[];
     // (undocumented)
     currentFrame: number;
+    // (undocumented)
+    currentQuality: VideoQuality | null;
     // (undocumented)
     currentTime: number;
     // (undocumented)
@@ -104,6 +108,8 @@ export interface PlayerContext {
     // (undocumented)
     playbackRate: number;
     // (undocumented)
+    qualities: VideoQuality[];
+    // (undocumented)
     smartPauseReason: 'visibility' | 'intersection' | null;
     // (undocumented)
     src: string | null;
@@ -120,6 +126,7 @@ export type PlayerEvent = {
     chapters?: Chapter[];
     captions?: CaptionCue[];
     markers?: Marker[];
+    qualities?: VideoQuality[];
 } | {
     type: 'METADATA_LOADED';
     duration: number;
@@ -190,6 +197,13 @@ export type PlayerEvent = {
     type: 'SET_MARKERS';
     markers: Marker[];
 } | {
+    type: 'SET_QUALITIES';
+    qualities: VideoQuality[];
+} | {
+    type: 'QUALITY_CHANGE';
+    quality: VideoQuality | null;
+    auto?: boolean;
+} | {
     type: 'HYDRATE_SETTINGS';
     volume: number;
     playbackRate: number;
@@ -233,6 +247,22 @@ export interface PlayerSnapshot {
 
 // @public (undocumented)
 export type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'buffering' | 'ended' | 'error';
+
+// @public (undocumented)
+export interface VideoQuality {
+    // (undocumented)
+    bitrate?: number;
+    // (undocumented)
+    height: number;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    label?: string;
+    // (undocumented)
+    src?: string;
+    // (undocumented)
+    width?: number;
+}
 
 // (No @packageDocumentation comment for this package)
 

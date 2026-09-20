@@ -9,6 +9,7 @@ export type {
   PlayerMiddleware,
   PlayerSnapshot,
   PlayerStatus,
+  VideoQuality,
 } from '@web-react-player/core';
 
 // Context
@@ -27,7 +28,13 @@ export {
   saveCaptionPreferences,
 } from './captions/utils';
 export type { PlayerContextValue, PlayerProviderProps } from './context/PlayerContext';
-export { PlayerProvider, usePlayerContext, usePlayerState } from './context/PlayerContext';
+export {
+  type ContainerTier,
+  getContainerTier,
+  PlayerProvider,
+  usePlayerContext,
+  usePlayerState,
+} from './context/PlayerContext';
 export { DEFAULT_HOTKEYS } from './hotkeys/defaultHotkeys';
 export {
   compileHotkeyBindings,
@@ -68,11 +75,15 @@ export type { PlayButtonProps } from './primitives/PlayButton';
 export { PlayButton } from './primitives/PlayButton';
 export type { PlayerDebugProps } from './primitives/PlayerDebug';
 export { PlayerDebug } from './primitives/PlayerDebug';
+export type { QualityMenuProps } from './primitives/QualityMenu';
+export { QualityMenu } from './primitives/QualityMenu';
 export type { RootProps } from './primitives/Root';
 // Primitives
 export { Root } from './primitives/Root';
 export type { ScreenGesturesProps } from './primitives/ScreenGestures';
 export { ScreenGestures } from './primitives/ScreenGestures';
+export type { SettingsMenuProps } from './primitives/SettingsMenu';
+export { SettingsMenu } from './primitives/SettingsMenu';
 export type { TimeDisplayProps } from './primitives/TimeDisplay';
 export { TimeDisplay } from './primitives/TimeDisplay';
 export type { TimeSliderProps } from './primitives/TimeSlider';

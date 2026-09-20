@@ -10,7 +10,6 @@ import {
   FullscreenButton,
   InteractiveMarkers,
   type Marker,
-  Match,
   MediaProvider,
   PIPButton,
   PlayButton,
@@ -18,9 +17,11 @@ import {
   PlayerProvider,
   Root,
   ScreenGestures,
+  SettingsMenu,
   TimeDisplay,
   TimeSlider,
   usePlayerContext,
+  type VideoQuality,
   VolumeControl,
 } from '@web-react-player/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,6 +30,33 @@ const SAMPLE_VIDEO_SRC = 'https://files.vidstack.io/sprite-fight/720p.mp4';
 const STORAGE_KEY_TIME = 'web-react-player:time';
 const STORAGE_KEY_VOLUME = 'web-react-player:volume';
 const STORAGE_KEY_RATE = 'web-react-player:rate';
+
+const SAMPLE_QUALITIES: VideoQuality[] = [
+  {
+    id: '1080p',
+    height: 1080,
+    label: '1080p HD',
+    src: 'https://files.vidstack.io/sprite-fight/1080p.mp4',
+  },
+  {
+    id: '720p',
+    height: 720,
+    label: '720p',
+    src: 'https://files.vidstack.io/sprite-fight/720p.mp4',
+  },
+  {
+    id: '480p',
+    height: 480,
+    label: '480p',
+    src: 'https://files.vidstack.io/sprite-fight/480p.mp4',
+  },
+  {
+    id: '360p',
+    height: 360,
+    label: '360p',
+    src: 'https://files.vidstack.io/sprite-fight/360p.mp4',
+  },
+];
 
 const SAMPLE_CHAPTERS: Chapter[] = [
   { title: '1. Introduction', startTime: 0, endTime: 120 },
@@ -363,6 +391,7 @@ export const App = () => {
         initialChapters={SAMPLE_CHAPTERS}
         initialCaptions={SAMPLE_CAPTIONS}
         initialMarkers={SAMPLE_MARKERS}
+        initialQualities={SAMPLE_QUALITIES}
       >
         {/* Outer relative wrapper; the Ambient glow sits BEHIND the player box */}
         <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9' }}>
@@ -503,7 +532,13 @@ function PlayerOverlayControls({
   subtitleSettingsOpen: boolean;
   onToggleSubtitleSettings: () => void;
 }) {
-  const { state, actions, controlsVisible, isSmall } = usePlayerContext();
+  const { state, actions, controlsVisible, isSmall, tier } = usePlayerContext();
+
+  // Compact players (narrow containers) collapse the full top bar and the
+  // per-rate speed pills into a single cycling button to stop the bar from
+  // overflowing. Wide players (xl/lg) render the complete control set.
+  const isCompact = isSmall || tier === 'sm' || tier === 'xs';
+  const isWide = tier === 'xl' || tier === 'lg';
 
   const speedRates = [0.5, 1, 1.25, 1.5, 2];
 
@@ -533,7 +568,7 @@ function PlayerOverlayControls({
         zIndex: 10,
       }}
     >
-      {/* Top Bar: Interactive */}
+      {/* Top Bar: Interactive — full toolbar only on extra-wide players */}
       <div
         style={{
           display: 'flex',
@@ -541,78 +576,107 @@ function PlayerOverlayControls({
           justifyContent: 'space-between',
           color: '#ffffff',
           pointerEvents: controlsVisible ? 'auto' : 'none',
+          gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>Sprite Fight</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            minWidth: 0,
+            flex: '1 1 auto',
+          }}
+        >
+          <span
+            style={{
+              fontWeight: 600,
+              fontSize: 14,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            Sprite Fight
+          </span>
           {state.context.activeChapter && (
             <>
-              <span style={{ color: '#9ca3af' }}>•</span>
-              <span style={{ color: '#e5e7eb', fontSize: 13 }}>
+              <span style={{ color: '#9ca3af', flexShrink: 0 }}>•</span>
+              <span
+                style={{
+                  color: '#e5e7eb',
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 {state.context.activeChapter.title}
               </span>
             </>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            type="button"
-            onClick={onToggleSubtitleSettings}
-            aria-pressed={subtitleSettingsOpen}
-            style={{
-              background: subtitleSettingsOpen ? '#2563eb' : 'rgba(255, 255, 255, 0.15)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              fontSize: 11,
-              padding: '4px 8px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Style CC
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              actions.toggleAmbient();
-              onLog('FSM', `Ambient mode toggled: ${!state.context.ambientMode}`);
-            }}
-            aria-pressed={state.context.ambientMode}
-            style={{
-              background: state.context.ambientMode ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              fontSize: 11,
-              padding: '4px 8px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Ambient
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              actions.toggleDocumentPip();
-              onLog('FSM', `Document PiP toggled: ${!state.context.documentPip}`);
-            }}
-            aria-pressed={state.context.documentPip}
-            style={{
-              background: state.context.documentPip ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: 4,
-              fontSize: 11,
-              padding: '4px 8px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Doc PiP
-          </button>
-        </div>
+        {tier === 'xl' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={onToggleSubtitleSettings}
+              aria-pressed={subtitleSettingsOpen}
+              style={{
+                background: subtitleSettingsOpen ? '#2563eb' : 'rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 4,
+                fontSize: 11,
+                padding: '4px 8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Style CC
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                actions.toggleAmbient();
+                onLog('FSM', `Ambient mode toggled: ${!state.context.ambientMode}`);
+              }}
+              aria-pressed={state.context.ambientMode}
+              style={{
+                background: state.context.ambientMode ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 4,
+                fontSize: 11,
+                padding: '4px 8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Ambient
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                actions.toggleDocumentPip();
+                onLog('FSM', `Document PiP toggled: ${!state.context.documentPip}`);
+              }}
+              aria-pressed={state.context.documentPip}
+              style={{
+                background: state.context.documentPip ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 4,
+                fontSize: 11,
+                padding: '4px 8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Doc PiP
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bottom Bar: Interactive */}
@@ -632,9 +696,10 @@ function PlayerOverlayControls({
             alignItems: 'center',
             justifyContent: 'space-between',
             color: '#ffffff',
+            gap: 8,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <PlayButton style={{ flexShrink: 0 }} />
 
             {/* Expandable Volume from YouTube + AudioBoost up to 300% */}
@@ -644,37 +709,17 @@ function PlayerOverlayControls({
               style={{ display: 'flex', gap: 4, fontVariantNumeric: 'tabular-nums', fontSize: 13 }}
             >
               <TimeDisplay type="current" style={{ fontWeight: 600 }} />
-              <span style={{ color: '#9ca3af' }}>/</span>
-              <TimeDisplay type="duration" style={{ color: '#9ca3af' }} />
+              {!isCompact && (
+                <>
+                  <span style={{ color: '#9ca3af' }}>/</span>
+                  <TimeDisplay type="duration" style={{ color: '#9ca3af' }} />
+                </>
+              )}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {isSmall ? (
-              // Single cycling speed button on narrow screens
-              <button
-                type="button"
-                onClick={handleCycleSpeed}
-                style={{
-                  background:
-                    state.context.playbackRate === 1
-                      ? 'rgba(255, 255, 255, 0.15)'
-                      : state.context.playbackRate >= 2
-                        ? '#ff0000'
-                        : '#ff8c00',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 4,
-                  fontSize: 11,
-                  padding: '4px 7px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                {state.context.playbackRate}x
-              </button>
-            ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {isWide ? (
               [0.5, 1, 1.5, 2].map((rate) => (
                 <button
                   key={rate}
@@ -699,7 +744,31 @@ function PlayerOverlayControls({
                   {rate}x
                 </button>
               ))
-            )}
+            ) : isCompact ? (
+              // Single cycling speed button on narrow players
+              <button
+                type="button"
+                onClick={handleCycleSpeed}
+                style={{
+                  background:
+                    state.context.playbackRate === 1
+                      ? 'rgba(255, 255, 255, 0.15)'
+                      : state.context.playbackRate >= 2
+                        ? '#ff0000'
+                        : '#ff8c00',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  padding: '4px 7px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                {state.context.playbackRate}x
+              </button>
+            ) : null}
 
             {/* YouTube CC Button with red active indicator */}
             <button
@@ -725,10 +794,14 @@ function PlayerOverlayControls({
               CC
             </button>
 
-            <PIPButton style={{ flexShrink: 0 }} />
-            <Match media="lg">
-              <FullscreenButton style={{ flexShrink: 0 }} />
-            </Match>
+            {/* Unified gear menu (quality, speed, ambient, doc PiP, captions) */}
+            <SettingsMenu
+              onOpenSubtitleStyles={onToggleSubtitleSettings}
+              style={{ flexShrink: 0 }}
+            />
+
+            {!isCompact && <PIPButton style={{ flexShrink: 0 }} />}
+            <FullscreenButton style={{ flexShrink: 0 }} />
           </div>
         </div>
       </div>

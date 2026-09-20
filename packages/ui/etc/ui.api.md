@@ -22,6 +22,7 @@ import { ReactPortal } from 'react';
 import { Ref } from 'react';
 import { RefAttributes } from 'react';
 import { SyntheticEvent } from 'react';
+import { VideoQuality } from '@web-react-player/core';
 
 // @public (undocumented)
 export function ActionBezel(input: ActionBezelProps): JSX.Element | null;
@@ -103,6 +104,9 @@ export { Chapter }
 export function compileHotkeyBindings(userHotkeys?: HotkeysMap): ResolvedBinding[];
 
 // @public (undocumented)
+export type ContainerTier = 'xl' | 'lg' | 'md' | 'sm' | 'xs';
+
+// @public (undocumented)
 export const DEFAULT_CAPTION_STYLES: CaptionStylePreferences;
 
 // @public (undocumented)
@@ -133,6 +137,9 @@ export function FullscreenButton(input: FullscreenButtonProps): JSX.Element;
 // @public (undocumented)
 export interface FullscreenButtonProps extends ComponentProps<'button'> {
 }
+
+// @public (undocumented)
+export function getContainerTier(width: number): ContainerTier;
 
 // @public (undocumented)
 export function handleKeyboardShortcut(event: KeyboardEvent, bindings: ResolvedBinding[], context: PlayerContextValue): boolean;
@@ -251,7 +258,10 @@ export interface PlayerContextValue {
         toggleAmbient: () => void;
         toggleDocumentPip: () => void;
         triggerAction: (type: string, value?: string | number) => void;
+        setQuality: (qualityId: string | 'auto') => void;
     };
+    // (undocumented)
+    activeMenu: string | null;
     // (undocumented)
     captionStyles: CaptionStylePreferences;
     // (undocumented)
@@ -265,6 +275,8 @@ export interface PlayerContextValue {
     // (undocumented)
     send: (event: PlayerEvent) => void;
     // (undocumented)
+    setActiveMenu: (menu: string | null) => void;
+    // (undocumented)
     setCaptionStyles: (styles: CaptionStylePreferences) => void;
     // (undocumented)
     setControlsVisible: (visible: boolean) => void;
@@ -276,6 +288,8 @@ export interface PlayerContextValue {
     state: PlayerSnapshot;
     // (undocumented)
     subscribe: (listener: PlayerListener) => () => void;
+    // (undocumented)
+    tier: ContainerTier;
     // (undocumented)
     videoRef: React.RefObject<HTMLVideoElement | null>;
 }
@@ -306,11 +320,20 @@ export interface PlayerProviderProps {
     initialChapters?: Chapter[];
     // (undocumented)
     initialMarkers?: Marker[];
+    // (undocumented)
+    initialQualities?: VideoQuality[];
 }
 
 export { PlayerSnapshot }
 
 export { PlayerStatus }
+
+// @public (undocumented)
+export function QualityMenu(input: QualityMenuProps): JSX.Element | null;
+
+// @public (undocumented)
+export interface QualityMenuProps extends ComponentProps<'div'> {
+}
 
 // @public (undocumented)
 export function Root(input: RootProps): JSX.Element;
@@ -335,6 +358,15 @@ export function ScreenGestures(input: ScreenGesturesProps): JSX.Element;
 
 // @public (undocumented)
 export interface ScreenGesturesProps extends ComponentProps<'div'> {
+}
+
+// @public (undocumented)
+export function SettingsMenu(input: SettingsMenuProps): JSX.Element;
+
+// @public (undocumented)
+export interface SettingsMenuProps extends ComponentProps<'div'> {
+    // (undocumented)
+    onOpenSubtitleStyles?: () => void;
 }
 
 // @public (undocumented)
@@ -390,6 +422,8 @@ export function usePlayerContext(): PlayerContextValue;
 
 // @public (undocumented)
 export function usePlayerState<T>(selector: (state: PlayerSnapshot) => T): T;
+
+export { VideoQuality }
 
 // @public (undocumented)
 export function VolumeControl(input: VolumeControlProps): JSX.Element;
