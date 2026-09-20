@@ -1,7 +1,9 @@
+// cspell:words Customizer
 import {
   ActionBezel,
   AmbientBackground,
   type CaptionCue,
+  CaptionCustomizer,
   Captions,
   type Chapter,
   DocumentPipPortal,
@@ -330,6 +332,7 @@ function SmartAutopauseController() {
 export const App = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<'ALL' | LogEntry['source']>('ALL');
+  const [subtitleSettingsOpen, setSubtitleSettingsOpen] = useState(false);
 
   const addLog = useCallback((source: LogEntry['source'], message: string) => {
     setLogs((prev) => [
@@ -369,6 +372,18 @@ export const App = () => {
           {/* Document PiP moves the WHOLE player (video + overlays) to a pop-out window */}
           <DocumentPipPortal>
             <Root
+              hotkeys={{
+                // Built-in canonical commands can be rebound or given alternatives
+                togglePlay: ['Space', 'k'],
+                seekForward10: ['l', 'ArrowRight'],
+                seekBackward10: ['j', 'ArrowLeft'],
+                seekForward5: [],
+                // Custom macro with direct context access: Shift+N = "next lesson"
+                'Shift+N': (ctx) => {
+                  ctx.actions.triggerAction('next_lesson', 'Navigating...');
+                  addLog('SHORTCUT', 'Macro [Shift+N] executed: next lesson');
+                },
+              }}
               style={{
                 position: 'relative',
                 width: '100%',
@@ -388,7 +403,16 @@ export const App = () => {
               <InteractiveMarkers />
               <CenterBigPlayButton />
               <SmartAutopauseController />
-              <PlayerOverlayControls onLog={addLog} />
+              <PlayerOverlayControls
+                onLog={addLog}
+                subtitleSettingsOpen={subtitleSettingsOpen}
+                onToggleSubtitleSettings={() => setSubtitleSettingsOpen((open) => !open)}
+              />
+              {/* Subtitle styling menu: local CSS-var cascade + Live Preview Box */}
+              <CaptionCustomizer
+                isOpen={subtitleSettingsOpen}
+                onClose={() => setSubtitleSettingsOpen(false)}
+              />
               <PlayerDebug />
             </Root>
           </DocumentPipPortal>
@@ -472,8 +496,12 @@ function CenterBigPlayButton() {
 
 function PlayerOverlayControls({
   onLog,
+  subtitleSettingsOpen,
+  onToggleSubtitleSettings,
 }: {
   onLog: (source: LogEntry['source'], msg: string) => void;
+  subtitleSettingsOpen: boolean;
+  onToggleSubtitleSettings: () => void;
 }) {
   const { state, actions, controlsVisible, isSmall } = usePlayerContext();
 
@@ -527,6 +555,23 @@ function PlayerOverlayControls({
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            type="button"
+            onClick={onToggleSubtitleSettings}
+            aria-pressed={subtitleSettingsOpen}
+            style={{
+              background: subtitleSettingsOpen ? '#2563eb' : 'rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 4,
+              fontSize: 11,
+              padding: '4px 8px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Style CC
+          </button>
           <button
             type="button"
             onClick={() => {

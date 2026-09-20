@@ -10,8 +10,10 @@ export function Captions({ className, style, ...props }: CaptionsProps) {
     return null;
   }
 
-  // Calculated to clear the buttons row (~34px) + gap (6px) + time slider (14px) + padding + safe margin
-  const bottomOffset = controlsVisible ? (isSmall ? '82px' : '96px') : isSmall ? '14px' : '24px';
+  // Calculated to clear the buttons row (~34px) + gap (6px) + time slider (14px)
+  // + padding + safe margin, and to mirror the Skip-marker pill offset so the
+  // two never overlap.
+  const bottomOffset = controlsVisible ? (isSmall ? '86px' : '98px') : isSmall ? '18px' : '26px';
 
   return (
     <section
@@ -24,18 +26,21 @@ export function Captions({ className, style, ...props }: CaptionsProps) {
         left: '50%',
         transform: 'translateX(-50%)',
         textAlign: 'center',
-        backgroundColor: 'rgba(8, 8, 8, 0.85)',
-        color: '#ffffff',
+        // Consume the cascading CSS variables injected by <Root /> — the caption
+        // tree itself never re-renders when the user tweaks the styles.
+        backgroundColor: 'var(--player-cue-bg, rgba(8, 8, 8, 0.85))',
+        color: 'var(--player-cue-color, #ffffff)',
+        fontSize: 'var(--player-cue-font-size, 15px)',
+        fontFamily: 'var(--player-cue-font-family, inherit)',
+        textShadow: 'var(--player-cue-shadow, 0 0 2px #000, 0 0 4px #000)',
         padding: isSmall ? '3px 8px' : '5px 12px',
-        borderRadius: '3px',
-        fontSize: isSmall ? '12px' : '15px',
+        borderRadius: '4px',
         lineHeight: 1.3,
         fontWeight: 600,
-        textShadow: '0 0 2px #000, 0 0 4px #000',
         maxWidth: isSmall ? '92%' : '85%',
         pointerEvents: 'none',
-        zIndex: 5,
-        transition: 'bottom 0.2s ease-in-out, font-size 0.15s ease-out, padding 0.15s ease-out',
+        zIndex: 15,
+        transition: 'bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         ...style,
       }}
       {...props}

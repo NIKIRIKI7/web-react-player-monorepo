@@ -18,6 +18,8 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { type CaptionStylePreferences, DEFAULT_CAPTION_STYLES } from '../captions/types';
+import { loadCaptionPreferences, saveCaptionPreferences } from '../captions/utils';
 
 export interface PlayerContextValue {
   state: PlayerSnapshot;
@@ -31,6 +33,8 @@ export interface PlayerContextValue {
   setIsScrubbing: (scrubbing: boolean) => void;
   isSmall: boolean;
   setIsSmall: (isSmall: boolean) => void;
+  captionStyles: CaptionStylePreferences;
+  setCaptionStyles: (styles: CaptionStylePreferences) => void;
   actions: {
     play: (smartResume?: boolean) => Promise<void>;
     pause: (reason?: 'visibility' | 'intersection') => void;
@@ -130,6 +134,20 @@ export function PlayerProvider({
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [isSmall, setIsSmall] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+
+  // Autonomous caption style preference (persisted separately from volume so it
+  // survives across sessions and videos).
+  const [captionStyles, setLocalCaptionStyles] =
+    useState<CaptionStylePreferences>(DEFAULT_CAPTION_STYLES);
+
+  useEffect(() => {
+    setLocalCaptionStyles(loadCaptionPreferences());
+  }, []);
+
+  const setCaptionStyles = useCallback((newStyles: CaptionStylePreferences) => {
+    setLocalCaptionStyles(newStyles);
+    saveCaptionPreferences(newStyles);
+  }, []);
 
   // Pending smart-pause fade timeout (fade out the gain before calling pause).
   const fadeTimeoutRef = useRef<number | null>(null);
@@ -540,9 +558,21 @@ export function PlayerProvider({
       setIsScrubbing,
       isSmall,
       setIsSmall,
+      captionStyles,
+      setCaptionStyles,
       actions,
     }),
-    [state, machine.subscribe, send, controlsVisible, isScrubbing, isSmall, actions],
+    [
+      state,
+      machine.subscribe,
+      send,
+      controlsVisible,
+      isScrubbing,
+      isSmall,
+      captionStyles,
+      setCaptionStyles,
+      actions,
+    ],
   );
 
   // Wait until persisted settings are restored before rendering children.

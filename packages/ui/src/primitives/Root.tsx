@@ -1,8 +1,12 @@
-import { type ComponentProps, useCallback, useEffect, useRef } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef } from 'react';
+import { captionStylesToCssVariables } from '../captions/utils';
 import { usePlayerContext } from '../context/PlayerContext';
+import { compileHotkeyBindings, handleKeyboardShortcut } from '../hotkeys/dispatcher';
+import type { HotkeysMap } from '../hotkeys/types';
 
 export interface RootProps extends ComponentProps<'div'> {
   keyboardShortcuts?: boolean;
+  hotkeys?: HotkeysMap;
   idleTimeout?: number;
   smallWhenWidth?: number;
 }
@@ -11,6 +15,7 @@ export function Root({
   ref,
   children,
   keyboardShortcuts = true,
+  hotkeys,
   idleTimeout = 2500,
   smallWhenWidth = 580,
   className,
@@ -19,17 +24,18 @@ export function Root({
   onPointerLeave,
   ...props
 }: RootProps) {
+  const context = usePlayerContext();
   const {
     state,
     send,
-    actions,
     rootRef,
     controlsVisible,
     setControlsVisible,
     isScrubbing,
     isSmall,
     setIsSmall,
-  } = usePlayerContext();
+    captionStyles,
+  } = context;
 
   const idleTimerRef = useRef<number | null>(null);
 
@@ -61,96 +67,34 @@ export function Root({
     return clearIdleTimer;
   }, [clearIdleTimer, isScrubbing, setControlsVisible, showControls, state.status]);
 
-  // Full YouTube Standard Keyboard Shortcuts
+  // Compile the prioritized hotkey pipeline once per config change. Custom
+  // user bindings come first, the default YouTube layout acts as fallback.
+  const compiledBindings = useMemo(
+    () => (keyboardShortcuts ? compileHotkeyBindings(hotkeys) : []),
+    [keyboardShortcuts, hotkeys],
+  );
+
+  // Keep the freshest context in a ref so the listener never goes stale and is
+  // not re-attached on every playback-frame state change.
+  const contextRef = useRef(context);
+  contextRef.current = context;
+
+  // Declarative global keyboard shortcuts: KeyboardEvent -> context filter ->
+  // key normalizer -> collision-aware dispatcher (preventDefault only on match).
   useEffect(() => {
-    if (!keyboardShortcuts) return;
+    if (!keyboardShortcuts || compiledBindings.length === 0) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target && ['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT'].includes(target.tagName)) {
-        return;
-      }
+      // The dispatcher already ignores editable fields; buttons keep their
+      // native Space/Enter affordance so we drop focus-driven key repeats.
+      if (target && target.tagName === 'BUTTON') return;
 
       showControls();
 
-      if (event.key >= '0' && event.key <= '9' && !event.metaKey && !event.ctrlKey) {
-        event.preventDefault();
-        const percent = Number.parseInt(event.key, 10) / 10;
-        actions.seek(state.context.duration * percent);
-        actions.triggerAction('seek', `${Math.round(percent * 100)}%`);
-        return;
-      }
-
-      switch (event.key) {
-        case ' ':
-        case 'k':
-        case 'K':
-          event.preventDefault();
-          actions.togglePlay();
-          break;
-        case 'j':
-        case 'J':
-          event.preventDefault();
-          actions.seekRelative(-10);
-          break;
-        case 'l':
-        case 'L':
-          event.preventDefault();
-          actions.seekRelative(10);
-          break;
-        case 'ArrowLeft':
-          event.preventDefault();
-          actions.seekRelative(-5);
-          break;
-        case 'ArrowRight':
-          event.preventDefault();
-          actions.seekRelative(5);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          actions.setVolume(state.context.volume + 0.05);
-          break;
-        case 'ArrowDown':
-          event.preventDefault();
-          actions.setVolume(state.context.volume - 0.05);
-          break;
-        case 'm':
-        case 'M':
-          event.preventDefault();
-          actions.toggleMute();
-          break;
-        case 'f':
-        case 'F':
-          event.preventDefault();
-          actions.toggleFullscreen();
-          break;
-        case 'c':
-        case 'C':
-          event.preventDefault();
-          actions.toggleCaptions();
-          break;
-        case 't':
-        case 'T':
-          event.preventDefault();
-          actions.toggleTheater();
-          break;
-        // Frame-by-frame scrubbing (UX): a frame depends on the video fps (`,`, `.`)
-        case ',':
-          event.preventDefault();
-          actions.seekRelative(-1 / Math.max(1, state.context.fps));
-          break;
-        case '.':
-          event.preventDefault();
-          actions.seekRelative(1 / Math.max(1, state.context.fps));
-          break;
-        case '>':
-          event.preventDefault();
-          actions.setPlaybackRate(Math.min(2, state.context.playbackRate + 0.25));
-          break;
-        case '<':
-          event.preventDefault();
-          actions.setPlaybackRate(Math.max(0.25, state.context.playbackRate - 0.25));
-          break;
+      const context = contextRef.current;
+      if (handleKeyboardShortcut(event, compiledBindings, context)) {
+        context.actions.triggerAction('shortcut');
       }
     };
 
@@ -158,7 +102,7 @@ export function Root({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [actions, keyboardShortcuts, showControls, state.context]);
+  }, [compiledBindings, keyboardShortcuts, showControls]);
 
   // Track container width to expose data-sm / data-lg breakpoints
   useEffect(() => {
@@ -207,6 +151,11 @@ export function Root({
     el.style.setProperty('--player-volume', `${volume}%`);
   }, [state, rootRef]);
 
+  // Cascade the caption style preferences as root CSS variables. <Captions />
+  // and the Live Preview Box both read them, giving instant style changes
+  // without re-rendering the subtitle tree.
+  const captionVars = useMemo(() => captionStylesToCssVariables(captionStyles), [captionStyles]);
+
   return (
     <div
       ref={(el) => {
@@ -229,6 +178,7 @@ export function Root({
       data-controls-hidden={!controlsVisible ? '' : undefined}
       style={{
         ...style,
+        ...captionVars,
         ...(state.context.brightness !== 1
           ? { filter: `brightness(${state.context.brightness})` }
           : {}),

@@ -1,3 +1,4 @@
+// cspell:words Customizer
 // Re-export core types for convenience
 export type {
   CaptionCue,
@@ -12,12 +13,41 @@ export type {
 
 // Context
 
+// Caption Customizer API
+export type {
+  CaptionFontFamily,
+  CaptionStylePreferences,
+  CaptionTextShadow,
+} from './captions/types';
+export { DEFAULT_CAPTION_STYLES } from './captions/types';
+export {
+  captionStylesToCssVariables,
+  hexToRgba,
+  loadCaptionPreferences,
+  saveCaptionPreferences,
+} from './captions/utils';
 export type { PlayerContextValue, PlayerProviderProps } from './context/PlayerContext';
 export { PlayerProvider, usePlayerContext, usePlayerState } from './context/PlayerContext';
+export { DEFAULT_HOTKEYS } from './hotkeys/defaultHotkeys';
+export {
+  compileHotkeyBindings,
+  executeCanonicalCommand,
+  handleKeyboardShortcut,
+} from './hotkeys/dispatcher';
+// Hotkeys API
+export type {
+  HotkeyAction,
+  HotkeyBindingDescriptor,
+  HotkeyHandler,
+  HotkeysMap,
+  PlayerCommand,
+} from './hotkeys/types';
 export type { ActionBezelProps } from './primitives/ActionBezel';
 export { ActionBezel } from './primitives/ActionBezel';
 export type { AmbientBackgroundProps } from './primitives/AmbientBackground';
 export { AmbientBackground } from './primitives/AmbientBackground';
+export type { CaptionCustomizerProps } from './primitives/CaptionCustomizer';
+export { CaptionCustomizer, CaptionPreviewBox } from './primitives/CaptionCustomizer';
 export type { CaptionsProps } from './primitives/Captions';
 export { Captions } from './primitives/Captions';
 export type { DocumentPipPortalProps } from './primitives/DocumentPipPortal';

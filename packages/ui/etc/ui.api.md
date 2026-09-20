@@ -48,13 +48,65 @@ export interface AmbientBackgroundProps {
 export { CaptionCue }
 
 // @public (undocumented)
+export function CaptionCustomizer(input: CaptionCustomizerProps): JSX.Element | null;
+
+// @public (undocumented)
+export interface CaptionCustomizerProps {
+    // (undocumented)
+    isOpen: boolean;
+    // (undocumented)
+    onClose: () => void;
+}
+
+// @public (undocumented)
+export type CaptionFontFamily = 'pro-sans' | 'mono-sans' | 'pro-serif' | 'mono-serif' | 'casual' | 'cursive';
+
+// @public (undocumented)
+export function CaptionPreviewBox(input: {
+    styles: CaptionStylePreferences;
+}): JSX.Element;
+
+// @public (undocumented)
 export function Captions(input: CaptionsProps): JSX.Element | null;
 
 // @public (undocumented)
 export interface CaptionsProps extends ComponentProps<'section'> {
 }
 
+// @public (undocumented)
+export interface CaptionStylePreferences {
+    // (undocumented)
+    backgroundColor: string;
+    // (undocumented)
+    backgroundOpacity: number;
+    // (undocumented)
+    fontFamily: CaptionFontFamily;
+    // (undocumented)
+    fontSize: string;
+    // (undocumented)
+    textColor: string;
+    // (undocumented)
+    textShadow: CaptionTextShadow;
+}
+
+// @public (undocumented)
+export function captionStylesToCssVariables(styles: CaptionStylePreferences): Record<string, string>;
+
+// @public (undocumented)
+export type CaptionTextShadow = 'none' | 'drop-shadow' | 'raised' | 'depressed' | 'outline';
+
 export { Chapter }
+
+// Warning: (ae-forgotten-export) The symbol "ResolvedBinding" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export function compileHotkeyBindings(userHotkeys?: HotkeysMap): ResolvedBinding[];
+
+// @public (undocumented)
+export const DEFAULT_CAPTION_STYLES: CaptionStylePreferences;
+
+// @public (undocumented)
+export const DEFAULT_HOTKEYS: Record<PlayerCommand, string[]>;
 
 // @public (undocumented)
 export function DocumentPipPortal(input: DocumentPipPortalProps): JSX.Element;
@@ -70,6 +122,9 @@ export interface DocumentPipPortalProps {
 }
 
 // @public (undocumented)
+export function executeCanonicalCommand(command: PlayerCommand, context: PlayerContextValue): void;
+
+// @public (undocumented)
 export function formatTime(seconds: number): string;
 
 // @public (undocumented)
@@ -78,6 +133,31 @@ export function FullscreenButton(input: FullscreenButtonProps): JSX.Element;
 // @public (undocumented)
 export interface FullscreenButtonProps extends ComponentProps<'button'> {
 }
+
+// @public (undocumented)
+export function handleKeyboardShortcut(event: KeyboardEvent, bindings: ResolvedBinding[], context: PlayerContextValue): boolean;
+
+// @public (undocumented)
+export function hexToRgba(hex: string, alpha: number): string;
+
+// @public (undocumented)
+export type HotkeyAction = PlayerCommand | HotkeyHandler;
+
+// @public (undocumented)
+export interface HotkeyBindingDescriptor {
+    // (undocumented)
+    description?: string;
+    // (undocumented)
+    handler: HotkeyAction;
+    // (undocumented)
+    keys: string | string[];
+}
+
+// @public (undocumented)
+export type HotkeyHandler = (context: PlayerContextValue, event: KeyboardEvent) => void;
+
+// @public (undocumented)
+export type HotkeysMap = Record<string, string | string[] | HotkeyAction | HotkeyBindingDescriptor>;
 
 // @public (undocumented)
 export function InteractiveMarkers(input: InteractiveMarkersProps): JSX.Element | null;
@@ -89,6 +169,9 @@ export interface InteractiveMarkersProps {
     // (undocumented)
     style?: CSSProperties;
 }
+
+// @public (undocumented)
+export function loadCaptionPreferences(): CaptionStylePreferences;
 
 export { Marker }
 
@@ -144,6 +227,9 @@ export interface PlayButtonProps extends ComponentProps<'button'> {
 export { PlayerActionRecord }
 
 // @public (undocumented)
+export type PlayerCommand = 'togglePlay' | 'play' | 'pause' | 'seekForward5' | 'seekBackward5' | 'seekForward10' | 'seekBackward10' | 'volumeUp' | 'volumeDown' | 'toggleMute' | 'toggleFullscreen' | 'toggleCaptions' | 'toggleTheater' | 'speedUp' | 'slowDown' | 'stepFrameForward' | 'stepFrameBackward' | 'skipActiveMarker' | 'seekTo0' | 'seekTo10' | 'seekTo20' | 'seekTo30' | 'seekTo40' | 'seekTo50' | 'seekTo60' | 'seekTo70' | 'seekTo80' | 'seekTo90';
+
+// @public (undocumented)
 export interface PlayerContextValue {
     // (undocumented)
     actions: {
@@ -167,6 +253,8 @@ export interface PlayerContextValue {
         triggerAction: (type: string, value?: string | number) => void;
     };
     // (undocumented)
+    captionStyles: CaptionStylePreferences;
+    // (undocumented)
     controlsVisible: boolean;
     // (undocumented)
     isScrubbing: boolean;
@@ -176,6 +264,8 @@ export interface PlayerContextValue {
     rootRef: React.RefObject<HTMLDivElement | null>;
     // (undocumented)
     send: (event: PlayerEvent) => void;
+    // (undocumented)
+    setCaptionStyles: (styles: CaptionStylePreferences) => void;
     // (undocumented)
     setControlsVisible: (visible: boolean) => void;
     // (undocumented)
@@ -228,12 +318,17 @@ export function Root(input: RootProps): JSX.Element;
 // @public (undocumented)
 export interface RootProps extends ComponentProps<'div'> {
     // (undocumented)
+    hotkeys?: HotkeysMap;
+    // (undocumented)
     idleTimeout?: number;
     // (undocumented)
     keyboardShortcuts?: boolean;
     // (undocumented)
     smallWhenWidth?: number;
 }
+
+// @public (undocumented)
+export function saveCaptionPreferences(styles: CaptionStylePreferences): void;
 
 // @public (undocumented)
 export function ScreenGestures(input: ScreenGesturesProps): JSX.Element;
