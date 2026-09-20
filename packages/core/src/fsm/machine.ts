@@ -1,4 +1,6 @@
 import type {
+  CaptionCue,
+  Chapter,
   PlayerContext,
   PlayerEvent,
   PlayerListener,
@@ -10,14 +12,44 @@ const INITIAL_CONTEXT: PlayerContext = {
   src: null,
   currentTime: 0,
   duration: 0,
+  bufferedEnd: 0,
   volume: 1,
   muted: false,
   playbackRate: 1,
+  fullscreen: false,
+  pip: false,
+  theater: false,
+  chapters: [],
+  activeChapter: null,
+  captions: [],
+  activeCue: null,
+  captionsEnabled: true, // Enabled by default
+  lastAction: null,
   fps: 30,
   durationInFrames: 0,
   currentFrame: 0,
   error: null,
 };
+
+function findActiveChapter(chapters: Chapter[], time: number): Chapter | null {
+  for (let i = 0; i < chapters.length; i++) {
+    const chapter = chapters[i];
+    if (time >= chapter.startTime && time < chapter.endTime) {
+      return chapter;
+    }
+  }
+  return null;
+}
+
+function findActiveCue(cues: CaptionCue[], time: number): CaptionCue | null {
+  for (let i = 0; i < cues.length; i++) {
+    const cue = cues[i];
+    if (time >= cue.startTime && time <= cue.endTime) {
+      return cue;
+    }
+  }
+  return null;
+}
 
 export class PlayerMachine {
   private status: PlayerStatus = 'idle';
@@ -52,6 +84,14 @@ export class PlayerMachine {
           nextStatus = 'loading';
           nextContext.src = event.src;
           nextContext.error = null;
+          if (event.chapters) {
+            nextContext.chapters = event.chapters;
+            nextContext.activeChapter = findActiveChapter(event.chapters, nextContext.currentTime);
+          }
+          if (event.captions) {
+            nextContext.captions = event.captions;
+            nextContext.activeCue = findActiveCue(event.captions, nextContext.currentTime);
+          }
         }
         break;
       case 'loading':
@@ -96,14 +136,45 @@ export class PlayerMachine {
     if (event.type === 'METADATA_LOADED') {
       nextContext.duration = event.duration;
       nextContext.durationInFrames = Math.round(event.duration * nextContext.fps);
+      nextContext.activeChapter = findActiveChapter(nextContext.chapters, nextContext.currentTime);
     } else if (event.type === 'TIME_UPDATE') {
       nextContext.currentTime = event.currentTime;
       nextContext.currentFrame = Math.round(event.currentTime * nextContext.fps);
+      if (typeof event.bufferedEnd === 'number') {
+        nextContext.bufferedEnd = event.bufferedEnd;
+      }
+      nextContext.activeChapter = findActiveChapter(nextContext.chapters, event.currentTime);
+      nextContext.activeCue = nextContext.captionsEnabled
+        ? findActiveCue(nextContext.captions, event.currentTime)
+        : null;
+    } else if (event.type === 'BUFFER_UPDATE') {
+      nextContext.bufferedEnd = event.bufferedEnd;
     } else if (event.type === 'VOLUME_CHANGE') {
       nextContext.volume = event.volume;
       nextContext.muted = event.muted;
     } else if (event.type === 'RATE_CHANGE') {
       nextContext.playbackRate = event.playbackRate;
+    } else if (event.type === 'FULLSCREEN_CHANGE') {
+      nextContext.fullscreen = event.fullscreen;
+    } else if (event.type === 'PIP_CHANGE') {
+      nextContext.pip = event.pip;
+    } else if (event.type === 'THEATER_TOGGLE') {
+      nextContext.theater = !nextContext.theater;
+    } else if (event.type === 'TOGGLE_CAPTIONS') {
+      nextContext.captionsEnabled = !nextContext.captionsEnabled;
+      nextContext.activeCue = nextContext.captionsEnabled
+        ? findActiveCue(nextContext.captions, nextContext.currentTime)
+        : null;
+    } else if (event.type === 'SET_CHAPTERS') {
+      nextContext.chapters = event.chapters;
+      nextContext.activeChapter = findActiveChapter(event.chapters, nextContext.currentTime);
+    } else if (event.type === 'SET_CAPTIONS') {
+      nextContext.captions = event.captions;
+      nextContext.activeCue = nextContext.captionsEnabled
+        ? findActiveCue(event.captions, nextContext.currentTime)
+        : null;
+    } else if (event.type === 'ACTION_TRIGGERED') {
+      nextContext.lastAction = event.action;
     } else if (event.type === 'ERROR') {
       nextStatus = 'error';
       nextContext.error = event.error;
@@ -117,12 +188,17 @@ export class PlayerMachine {
       prevContext.src !== nextContext.src ||
       prevContext.currentTime !== nextContext.currentTime ||
       prevContext.duration !== nextContext.duration ||
+      prevContext.bufferedEnd !== nextContext.bufferedEnd ||
       prevContext.volume !== nextContext.volume ||
       prevContext.muted !== nextContext.muted ||
       prevContext.playbackRate !== nextContext.playbackRate ||
-      prevContext.fps !== nextContext.fps ||
-      prevContext.durationInFrames !== nextContext.durationInFrames ||
-      prevContext.currentFrame !== nextContext.currentFrame ||
+      prevContext.fullscreen !== nextContext.fullscreen ||
+      prevContext.pip !== nextContext.pip ||
+      prevContext.theater !== nextContext.theater ||
+      prevContext.captionsEnabled !== nextContext.captionsEnabled ||
+      prevContext.activeChapter !== nextContext.activeChapter ||
+      prevContext.activeCue !== nextContext.activeCue ||
+      prevContext.lastAction !== nextContext.lastAction ||
       prevContext.error !== nextContext.error;
 
     if (!hasStatusChanged && !hasContextChanged) {

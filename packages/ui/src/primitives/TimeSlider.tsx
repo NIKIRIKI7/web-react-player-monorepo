@@ -1,72 +1,212 @@
-import {
-  type ChangeEvent,
-  type ComponentProps,
-  type CSSProperties,
-  useEffect,
-  useState,
-} from 'react';
+import { type ComponentProps, type PointerEvent, useRef, useState } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
+import { formatTime } from '../utils/formatTime';
 
-export interface TimeSliderProps
-  extends Omit<ComponentProps<'input'>, 'type' | 'value' | 'min' | 'max'> {}
+export interface TimeSliderProps extends Omit<ComponentProps<'div'>, 'onChange'> {
+  thumbClassName?: string;
+  trackClassName?: string;
+  progressClassName?: string;
+  bufferClassName?: string;
+  previewClassName?: string;
+}
 
-export function TimeSlider({ ref, onChange, ...props }: TimeSliderProps) {
-  const { state, send } = usePlayerContext();
-  const [isDragging, setIsDragging] = useState(false);
-  const [localTime, setLocalTime] = useState(0);
+export function TimeSlider({
+  ref,
+  className,
+  thumbClassName,
+  trackClassName,
+  progressClassName,
+  bufferClassName,
+  previewClassName,
+  style,
+  ...props
+}: TimeSliderProps) {
+  const { state, actions, setIsScrubbing } = usePlayerContext();
+  const trackRef = useRef<HTMLDivElement | null>(null);
 
-  // Sync with global state if we are not manually dragging the slider
-  useEffect(() => {
-    if (!isDragging) {
-      setLocalTime(state.context.currentTime);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hoverTime, setHoverTime] = useState(0);
+  const [hoverX, setHoverX] = useState(0);
+
+  const duration = state.context.duration || 1;
+  const playedPercent = Math.min(100, Math.max(0, (state.context.currentTime / duration) * 100));
+  const bufferedPercent = Math.min(100, Math.max(0, (state.context.bufferedEnd / duration) * 100));
+
+  const calculateTimeFromPointer = (e: PointerEvent<HTMLDivElement>) => {
+    if (!trackRef.current) return 0;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    return pos * duration;
+  };
+
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    setIsScrubbing(true);
+    const targetTime = calculateTimeFromPointer(e);
+    actions.seek(targetTime);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const time = (x / rect.width) * duration;
+    setHoverX(x);
+    setHoverTime(time);
+
+    if (e.buttons === 1) {
+      actions.seek(time);
     }
-  }, [state.context.currentTime, isDragging]);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newTime = Number.parseFloat(e.target.value);
-    setLocalTime(newTime);
-    onChange?.(e);
   };
 
-  const handlePointerDown = () => {
-    setIsDragging(true);
+  const handlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    setIsScrubbing(false);
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore if capture was already released
+    }
   };
 
-  const handlePointerUp = () => {
-    setIsDragging(false);
-    send({ type: 'TIME_UPDATE', currentTime: localTime });
-  };
-
-  // Calculate fill percentage (for gradient styling in CSS/Tailwind)
-  const progressPercent =
-    state.context.duration > 0 ? (localTime / state.context.duration) * 100 : 0;
+  // Find hovering chapter title
+  const hoveredChapter = state.context.chapters.find(
+    (c) => hoverTime >= c.startTime && hoverTime < c.endTime,
+  );
 
   return (
-    <input
+    <div
       ref={ref}
-      type="range"
-      min={0}
-      max={state.context.duration || 100}
-      step="any"
-      value={localTime}
-      onChange={handleChange}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp} // Protection in case the mouse leaves the window
-      aria-label="Seek time"
-      aria-valuemin={0}
-      aria-valuemax={state.context.duration}
-      aria-valuenow={localTime}
-      aria-valuetext={`${Math.round(localTime)} seconds`}
-      style={
-        {
-          '--slider-progress': `${progressPercent}%`,
-          ...props.style,
-        } as CSSProperties
-      }
+      className={className}
       data-player-time-slider=""
-      data-dragging={isDragging ? '' : undefined}
+      style={{ position: 'relative', userSelect: 'none', ...style }}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       {...props}
-    />
+    >
+      {/* 1. Track container */}
+      <div
+        ref={trackRef}
+        className={trackClassName}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'pointer',
+        }}
+      >
+        {/* Background full track */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+            borderRadius: 9999,
+          }}
+        />
+
+        {/* 2. Buffered progress bar */}
+        <div
+          className={bufferClassName}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${bufferedPercent}%`,
+            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            borderRadius: 9999,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* 3. Played progress bar */}
+        <div
+          className={progressClassName}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${playedPercent}%`,
+            backgroundColor: '#ff0000',
+            borderRadius: 9999,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* 4. Chapter gaps / markers */}
+        {state.context.chapters.length > 1 &&
+          state.context.chapters.slice(1).map((chapter) => {
+            const leftPercent = (chapter.startTime / duration) * 100;
+            return (
+              <div
+                key={chapter.startTime}
+                style={{
+                  position: 'absolute',
+                  left: `calc(${leftPercent}% - 1px)`,
+                  top: 0,
+                  bottom: 0,
+                  width: '2px',
+                  backgroundColor: '#000000',
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                }}
+              />
+            );
+          })}
+
+        {/* 5. Scrubber thumb */}
+        <div
+          className={thumbClassName}
+          style={{
+            position: 'absolute',
+            left: `${playedPercent}%`,
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 3,
+          }}
+        />
+      </div>
+
+      {/* 6. Floating Hover Preview Tooltip (Clamped inside player boundaries) */}
+      {isHovered && trackRef.current && (
+        <div
+          className={previewClassName}
+          style={{
+            position: 'absolute',
+            left: `${hoverX}px`,
+            bottom: '100%',
+            transform: 'translateX(-50%)',
+            marginBottom: '10px',
+            backgroundColor: 'rgba(15, 15, 15, 0.95)',
+            color: '#ffffff',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+            zIndex: 50,
+          }}
+        >
+          {hoveredChapter && (
+            <span style={{ fontWeight: 600, color: '#e5e7eb', marginBottom: 2 }}>
+              {hoveredChapter.title}
+            </span>
+          )}
+          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatTime(hoverTime)}</span>
+        </div>
+      )}
+    </div>
   );
 }

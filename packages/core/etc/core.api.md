@@ -5,10 +5,54 @@
 ```ts
 
 // @public (undocumented)
+export interface CaptionCue {
+    // (undocumented)
+    endTime: number;
+    // (undocumented)
+    id?: string;
+    // (undocumented)
+    startTime: number;
+    // (undocumented)
+    text: string;
+}
+
+// @public (undocumented)
+export interface Chapter {
+    // (undocumented)
+    endTime: number;
+    // (undocumented)
+    startTime: number;
+    // (undocumented)
+    title: string;
+}
+
+// @public (undocumented)
 export const createPlayerMachine: () => PlayerMachine;
 
 // @public (undocumented)
+export interface PlayerActionRecord {
+    // (undocumented)
+    timestamp: number;
+    // (undocumented)
+    type: string;
+    // (undocumented)
+    value?: string | number;
+}
+
+// @public (undocumented)
 export interface PlayerContext {
+    // (undocumented)
+    activeChapter: Chapter | null;
+    // (undocumented)
+    activeCue: CaptionCue | null;
+    // (undocumented)
+    bufferedEnd: number;
+    // (undocumented)
+    captions: CaptionCue[];
+    // (undocumented)
+    captionsEnabled: boolean;
+    // (undocumented)
+    chapters: Chapter[];
     // (undocumented)
     currentFrame: number;
     // (undocumented)
@@ -22,11 +66,19 @@ export interface PlayerContext {
     // (undocumented)
     fps: number;
     // (undocumented)
+    fullscreen: boolean;
+    // (undocumented)
+    lastAction: PlayerActionRecord | null;
+    // (undocumented)
     muted: boolean;
+    // (undocumented)
+    pip: boolean;
     // (undocumented)
     playbackRate: number;
     // (undocumented)
     src: string | null;
+    // (undocumented)
+    theater: boolean;
     // (undocumented)
     volume: number;
 }
@@ -35,6 +87,8 @@ export interface PlayerContext {
 export type PlayerEvent = {
     type: 'LOAD';
     src: string;
+    chapters?: Chapter[];
+    captions?: CaptionCue[];
 } | {
     type: 'METADATA_LOADED';
     duration: number;
@@ -51,6 +105,10 @@ export type PlayerEvent = {
 } | {
     type: 'TIME_UPDATE';
     currentTime: number;
+    bufferedEnd?: number;
+} | {
+    type: 'BUFFER_UPDATE';
+    bufferedEnd: number;
 } | {
     type: 'VOLUME_CHANGE';
     volume: number;
@@ -58,6 +116,25 @@ export type PlayerEvent = {
 } | {
     type: 'RATE_CHANGE';
     playbackRate: number;
+} | {
+    type: 'FULLSCREEN_CHANGE';
+    fullscreen: boolean;
+} | {
+    type: 'PIP_CHANGE';
+    pip: boolean;
+} | {
+    type: 'THEATER_TOGGLE';
+} | {
+    type: 'TOGGLE_CAPTIONS';
+} | {
+    type: 'SET_CHAPTERS';
+    chapters: Chapter[];
+} | {
+    type: 'SET_CAPTIONS';
+    captions: CaptionCue[];
+} | {
+    type: 'ACTION_TRIGGERED';
+    action: PlayerActionRecord;
 } | {
     type: 'ENDED';
 } | {

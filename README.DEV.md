@@ -107,16 +107,22 @@ type(scope): description
 
 Чтобы нейросети (Claude, ChatGPT, Cursor, Windsurf) давали безупречный результат, передавайте им только актуальный контекст без шума (`dist`, локи, медиафайлы):
 
-```bash
+```bash 
 # Упаковка всего монорепозитория
 pnpm repomix             # -> repomix-output.xml
+```
 
+```bash 
 # Упаковка только ядра (FSM, типы)
 pnpm repomix:core        # -> repomix-core.xml
+```
 
+```bash 
 # Упаковка только React UI
 pnpm repomix:ui          # -> repomix-ui.xml
+```
 
+```bash 
 # Упаковка только песочницы
 pnpm repomix:app         # -> repomix-playground.xml
 ```
@@ -185,23 +191,35 @@ pnpm repomix:app         # -> repomix-playground.xml
 ```bash
 # 1. Поиск неиспользуемого кода, забытых файлов и зависимостей (Knip)
 pnpm check:knip
+```
 
+```bash 
 # 2. Проверка соответствия версий пакетов в монорепозитории (Syncpack)
 pnpm check:syncpack
 # Если есть расхождения: pnpm fix:syncpack
+```
 
+```bash 
 # 3. Проверка архитектурных границ (Dependency Cruiser)
 pnpm check:deps
+```
 
+```bash 
 # 4. Проверка и автоматическое форматирование стилей (Biome)
 pnpm lint:fix
+```
 
+```bash 
 # 5. Проверка орфографии в пропсах и комментариях (CSpell)
 pnpm lint:spell
+```
 
+```bash 
 # 6. Строгая проверка типов во всех пакетах
 pnpm typecheck
+```
 
+```bash 
 # 7. Запуск юнит-тестов
 pnpm test
 ```

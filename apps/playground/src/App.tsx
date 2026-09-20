@@ -1,364 +1,814 @@
 import {
+  ActionBezel,
+  type CaptionCue,
+  Captions,
+  type Chapter,
+  FullscreenButton,
   MuteButton,
+  PIPButton,
   PlayButton,
   PlayerProvider,
   Root,
+  ScreenGestures,
   TimeDisplay,
   TimeSlider,
   usePlayerContext,
 } from '@web-react-player/ui';
-import { type ChangeEvent, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-// Reliable test video stream with CORS enabled
 const SAMPLE_VIDEO_SRC = 'https://files.vidstack.io/sprite-fight/720p.mp4';
+const STORAGE_KEY_TIME = 'web-react-player:time';
+const STORAGE_KEY_VOLUME = 'web-react-player:volume';
+const STORAGE_KEY_RATE = 'web-react-player:rate';
 
-function VideoMedia() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const { state, send } = usePlayerContext();
+const SAMPLE_CHAPTERS: Chapter[] = [
+  { title: '1. Introduction', startTime: 0, endTime: 120 },
+  { title: '2. The Forest Camp', startTime: 120, endTime: 310 },
+  { title: '3. Goblin Encounter', startTime: 310, endTime: 510 },
+  { title: '4. The Escape & Ending', startTime: 510, endTime: 620 },
+];
 
-  // 1. Play/Pause synchronization (FSM -> Video)
+// Continuous subtitles covering the entire duration
+const SAMPLE_CAPTIONS: CaptionCue[] = [
+  { startTime: 0, endTime: 6, text: 'Blender Studio presents: Sprite Fight' },
+  { startTime: 6, endTime: 15, text: 'The woods are quiet... a little too quiet.' },
+  {
+    startTime: 15,
+    endTime: 28,
+    text: 'Ellie: According to my notes, the camp should be just ahead.',
+  },
+  {
+    startTime: 28,
+    endTime: 42,
+    text: 'Look at those ancient tree trunks. They have strange markings.',
+  },
+  { startTime: 42, endTime: 58, text: 'Astrid: Are you sure we are not lost again?' },
+  {
+    startTime: 58,
+    endTime: 72,
+    text: 'Ellie: Positive! Follow the glowing mushrooms on the ground.',
+  },
+  { startTime: 72, endTime: 88, text: 'Wait... did you hear that branch cracking behind us?' },
+  { startTime: 88, endTime: 104, text: 'Astrid: Probably just a harmless forest squirrel.' },
+  { startTime: 104, endTime: 120, text: 'Ellie: That did not sound like a squirrel at all!' },
+  { startTime: 120, endTime: 136, text: 'Look up in the branches! The sprites are watching us!' },
+  { startTime: 136, endTime: 154, text: 'Astrid: Stay calm and grab the hairspray!' },
+  { startTime: 154, endTime: 175, text: 'Ellie: Don’t provoke them, they look hungry!' },
+  { startTime: 175, endTime: 210, text: 'The little creatures are gathering in circles...' },
+  { startTime: 210, endTime: 250, text: 'Prepare the defenses, this is going to get messy!' },
+  { startTime: 250, endTime: 300, text: 'Watch out on the left flank! They have pointy sticks!' },
+];
+
+interface LogEntry {
+  id: number;
+  time: string;
+  source: 'FSM' | 'MEDIA' | 'SHORTCUT' | 'STORAGE' | 'SESSION';
+  message: string;
+}
+
+function VideoMedia({ onLog }: { onLog: (source: LogEntry['source'], msg: string) => void }) {
+  const { state, send, videoRef, actions } = usePlayerContext();
+  const isInitialTimeRestored = useRef(false);
+
+  const onLogRef = useRef(onLog);
+  onLogRef.current = onLog;
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (state.status === 'playing' && video.paused) {
-      video.play().catch((err: unknown) => {
-        console.warn('[playground] Play request prevented:', err);
-      });
-    } else if (state.status === 'paused' && !video.paused) {
-      video.pause();
-    }
-  }, [state.status]);
+    onLogRef.current('MEDIA', 'Loading video source...');
+    send({
+      type: 'LOAD',
+      src: SAMPLE_VIDEO_SRC,
+      chapters: SAMPLE_CHAPTERS,
+      captions: SAMPLE_CAPTIONS,
+    });
 
-  // 2. Mute & Volume synchronization (FSM -> Video)
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = state.context.muted;
-    video.volume = state.context.volume;
-  }, [state.context.muted, state.context.volume]);
+    const handleLoadedMetadata = () => {
+      onLogRef.current('MEDIA', `Metadata loaded: duration = ${video.duration.toFixed(2)}s`);
+      send({ type: 'METADATA_LOADED', duration: video.duration });
 
-  // 3. PlaybackRate synchronization (FSM -> Video)
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.playbackRate = state.context.playbackRate;
-  }, [state.context.playbackRate]);
-
-  // 4. Seek synchronization (FSM -> Video)
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (Math.abs(video.currentTime - state.context.currentTime) > 0.5) {
-      video.currentTime = state.context.currentTime;
-    }
-  }, [state.context.currentTime]);
-
-  // 5. Media event listeners (Video -> FSM)
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    send({ type: 'LOAD', src: SAMPLE_VIDEO_SRC });
-
-    const syncMetadata = () => {
-      if (Number.isFinite(video.duration) && video.duration > 0) {
-        send({ type: 'METADATA_LOADED', duration: video.duration });
+      if (!isInitialTimeRestored.current) {
+        const savedTime = localStorage.getItem(STORAGE_KEY_TIME);
+        if (savedTime) {
+          const time = Number.parseFloat(savedTime);
+          if (time > 0 && time < video.duration - 2) {
+            video.currentTime = time;
+            send({ type: 'TIME_UPDATE', currentTime: time });
+            onLogRef.current('STORAGE', `Resumed playback at ${time.toFixed(1)}s`);
+          }
+        }
+        isInitialTimeRestored.current = true;
       }
     };
 
-    // Fix race condition: check if metadata was already loaded before useEffect
     if (video.readyState >= 1) {
-      syncMetadata();
+      handleLoadedMetadata();
+    }
+
+    // Register a native TextTrack so browser PiP window shows synced subtitles too
+    if (video.addTextTrack && typeof VTTCue !== 'undefined') {
+      try {
+        const nativeTrack = video.addTextTrack('subtitles', 'English', 'en');
+        nativeTrack.mode = 'hidden';
+        for (const cue of SAMPLE_CAPTIONS) {
+          nativeTrack.addCue(new VTTCue(cue.startTime, cue.endTime, cue.text));
+        }
+      } catch {
+        // Native cue registration is optional — headless Captions still work
+      }
     }
 
     const handleTimeUpdate = () => {
-      send({ type: 'TIME_UPDATE', currentTime: video.currentTime });
+      let bufferedEnd = 0;
+      if (video.buffered.length > 0) {
+        bufferedEnd = video.buffered.end(video.buffered.length - 1);
+      }
+      send({
+        type: 'TIME_UPDATE',
+        currentTime: video.currentTime,
+        bufferedEnd,
+      });
     };
 
     const handlePlay = () => {
+      onLogRef.current('MEDIA', 'Event: play');
       send({ type: 'PLAY' });
     };
 
     const handlePause = () => {
+      onLogRef.current('MEDIA', 'Event: pause');
       send({ type: 'PAUSE' });
     };
 
-    const handleVolumeChange = () => {
-      send({
-        type: 'VOLUME_CHANGE',
-        volume: video.volume,
-        muted: video.muted,
-      });
-    };
-
-    const handleRateChange = () => {
-      send({
-        type: 'RATE_CHANGE',
-        playbackRate: video.playbackRate,
-      });
-    };
-
     const handleWaiting = () => {
+      onLogRef.current('MEDIA', 'Event: waiting (buffering)');
       send({ type: 'WAITING' });
     };
 
     const handleCanPlay = () => {
+      onLogRef.current('MEDIA', 'Event: canplay');
       send({ type: 'CAN_PLAY' });
-      syncMetadata();
+      handleLoadedMetadata();
     };
 
     const handleEnded = () => {
+      onLogRef.current('MEDIA', 'Event: ended');
       send({ type: 'ENDED' });
+      localStorage.removeItem(STORAGE_KEY_TIME);
     };
 
-    video.addEventListener('loadedmetadata', syncMetadata);
+    const handleEnterPiP = () => {
+      onLogRef.current('MEDIA', 'Event: enterpictureinpicture');
+      send({ type: 'PIP_CHANGE', pip: true });
+    };
+
+    const handleLeavePiP = () => {
+      onLogRef.current('MEDIA', 'Event: leavepictureinpicture');
+      send({ type: 'PIP_CHANGE', pip: false });
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
-    video.addEventListener('volumechange', handleVolumeChange);
-    video.addEventListener('ratechange', handleRateChange);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('ended', handleEnded);
+    video.addEventListener('enterpictureinpicture', handleEnterPiP);
+    video.addEventListener('leavepictureinpicture', handleLeavePiP);
 
     return () => {
-      video.removeEventListener('loadedmetadata', syncMetadata);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
-      video.removeEventListener('volumechange', handleVolumeChange);
-      video.removeEventListener('ratechange', handleRateChange);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('enterpictureinpicture', handleEnterPiP);
+      video.removeEventListener('leavepictureinpicture', handleLeavePiP);
     };
-  }, [send]);
+  }, [send, videoRef]);
+
+  useEffect(() => {
+    const savedVol = localStorage.getItem(STORAGE_KEY_VOLUME);
+    if (savedVol) {
+      actions.setVolume(Number.parseFloat(savedVol));
+    }
+    const savedRate = localStorage.getItem(STORAGE_KEY_RATE);
+    if (savedRate) {
+      actions.setPlaybackRate(Number.parseFloat(savedRate));
+    }
+  }, [actions]);
+
+  useEffect(() => {
+    if (state.status !== 'playing') return;
+    const timer = setInterval(() => {
+      localStorage.setItem(STORAGE_KEY_TIME, state.context.currentTime.toString());
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [state.status, state.context.currentTime]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_VOLUME, state.context.volume.toString());
+  }, [state.context.volume]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_RATE, state.context.playbackRate.toString());
+  }, [state.context.playbackRate]);
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: 'Sprite Fight (Open Movie)',
+      artist: 'Blender Animation Studio',
+      album: 'Web React Player Demo',
+      artwork: [
+        {
+          src: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500',
+          sizes: '512x512',
+          type: 'image/jpeg',
+        },
+      ],
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => actions.play());
+    navigator.mediaSession.setActionHandler('pause', () => actions.pause());
+    navigator.mediaSession.setActionHandler('seekbackward', () => actions.seekRelative(-10));
+    navigator.mediaSession.setActionHandler('seekforward', () => actions.seekRelative(10));
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (typeof details.seekTime === 'number') actions.seek(details.seekTime);
+    });
+
+    onLogRef.current('SESSION', 'MediaSession API configured');
+
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('seekbackward', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
+    };
+  }, [actions]);
 
   return (
-    // biome-ignore lint/a11y/useMediaCaption: demo video without captions track
+    // biome-ignore lint/a11y/useMediaCaption: captions are rendered by Headless Captions component
     <video
-      ref={videoRef}
+      ref={(el) => {
+        videoRef.current = el;
+      }}
       src={SAMPLE_VIDEO_SRC}
       crossOrigin="anonymous"
       playsInline
       preload="auto"
       style={{
         width: '100%',
-        aspectRatio: '16 / 9',
+        height: '100%',
+        objectFit: 'contain',
         backgroundColor: '#000000',
-        borderRadius: '8px',
         display: 'block',
       }}
     />
   );
 }
 
-// Volume input range control
-function VolumeControl() {
-  const { state, send } = usePlayerContext();
-
-  const handleVolume = (e: ChangeEvent<HTMLInputElement>) => {
-    const volume = Number.parseFloat(e.target.value);
-    send({
-      type: 'VOLUME_CHANGE',
-      volume,
-      muted: volume === 0,
-    });
-  };
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <MuteButton
-        style={{
-          padding: '8px 14px',
-          borderRadius: 6,
-          border: '1px solid #d1d5db',
-          backgroundColor: '#ffffff',
-          color: '#374151',
-          fontWeight: 500,
-          cursor: 'pointer',
-        }}
-      />
-      <input
-        type="range"
-        min={0}
-        max={1}
-        step={0.05}
-        value={state.context.muted ? 0 : state.context.volume}
-        onChange={handleVolume}
-        style={{ width: 80, cursor: 'pointer' }}
-        aria-label="Volume"
-      />
-    </div>
-  );
-}
-
-// Speed buttons selector
-function PlaybackRateControl() {
-  const { state, send } = usePlayerContext();
-  const rates = [0.5, 1, 1.5, 2];
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: 13, color: '#6b7280' }}>Speed:</span>
-      {rates.map((rate) => (
-        <button
-          key={rate}
-          type="button"
-          onClick={() => send({ type: 'RATE_CHANGE', playbackRate: rate })}
-          style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 12,
-            cursor: 'pointer',
-            border: '1px solid #d1d5db',
-            backgroundColor: state.context.playbackRate === rate ? '#2563eb' : '#ffffff',
-            color: state.context.playbackRate === rate ? '#ffffff' : '#374151',
-            fontWeight: 600,
-          }}
-        >
-          {rate}x
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function StateInspector() {
-  const { state } = usePlayerContext();
-
-  return (
-    <div style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: 14, color: '#9ca3af', marginBottom: 8, textTransform: 'uppercase' }}>
-        FSM Inspector
-      </h3>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
-        <span style={{ fontSize: 14, color: '#374151' }}>Current Status:</span>
-        <span
-          style={{
-            padding: '2px 8px',
-            borderRadius: 4,
-            fontWeight: 600,
-            fontSize: 13,
-            backgroundColor: state.status === 'playing' ? '#dcfce7' : '#f3f4f6',
-            color: state.status === 'playing' ? '#15803d' : '#374151',
-          }}
-        >
-          {state.status}
-        </span>
-      </div>
-      <pre
-        style={{
-          backgroundColor: '#111827',
-          color: '#38bdf8',
-          padding: 16,
-          borderRadius: 8,
-          fontSize: 13,
-          overflowX: 'auto',
-        }}
-      >
-        {JSON.stringify(state.context, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
 export const App = () => {
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [filter, setFilter] = useState<'ALL' | LogEntry['source']>('ALL');
+
+  const addLog = useCallback((source: LogEntry['source'], message: string) => {
+    setLogs((prev) => [
+      {
+        id: Date.now() + Math.random(),
+        time: new Date().toLocaleTimeString(),
+        source,
+        message,
+      },
+      ...prev.slice(0, 49),
+    ]);
+  }, []);
+
+  const filteredLogs = filter === 'ALL' ? logs : logs.filter((l) => l.source === filter);
+
   return (
-    <main style={{ padding: 40, fontFamily: 'sans-serif', maxWidth: 840, margin: '0 auto' }}>
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Web React Player</h1>
-        <p style={{ color: '#6b7280', margin: '6px 0 0' }}>
-          Headless architecture demonstration with FSM state management
+    <main
+      style={{ padding: '32px 24px', fontFamily: 'sans-serif', maxWidth: 960, margin: '0 auto' }}
+    >
+      <header style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>Web React Player</h1>
+        <p style={{ color: '#6b7280', margin: '4px 0 0' }}>
+          YouTube-style headless architecture with Chapters, Preview, Gestures & MediaSession
         </p>
       </header>
 
-      <PlayerProvider>
+      <PlayerProvider initialChapters={SAMPLE_CHAPTERS} initialCaptions={SAMPLE_CAPTIONS}>
         <Root
           style={{
-            backgroundColor: '#ffffff',
-            padding: 20,
+            position: 'relative',
+            width: '100%',
+            aspectRatio: '16 / 9',
+            backgroundColor: '#000000',
             borderRadius: 12,
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-            border: '1px solid #e5e7eb',
+            overflow: 'hidden',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
           }}
         >
-          <VideoMedia />
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              marginTop: 14,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <TimeSlider
-                style={{
-                  flex: 1,
-                  accentColor: '#2563eb',
-                  cursor: 'pointer',
-                }}
-              />
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 4,
-                  fontVariantNumeric: 'tabular-nums',
-                  fontSize: 14,
-                  minWidth: 90,
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <TimeDisplay type="current" style={{ fontWeight: 600 }} />
-                <span style={{ color: '#9ca3af' }}>/</span>
-                <TimeDisplay type="duration" style={{ color: '#6b7280' }} />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 12,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <PlayButton
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 6,
-                    border: 'none',
-                    backgroundColor: '#2563eb',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Play / Pause
-                </PlayButton>
-                <VolumeControl />
-              </div>
-              <PlaybackRateControl />
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16, fontSize: 12, color: '#6b7280' }}>
-            Keyboard Shortcuts:{' '}
-            <kbd style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>Space</kbd>{' '}
-            / <kbd style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>K</kbd>{' '}
-            (play/pause),{' '}
-            <kbd style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>M</kbd>{' '}
-            (mute).
-          </div>
-
-          <StateInspector />
+          <VideoMedia onLog={addLog} />
+          {/* Screen gestures overlay handles single click play/pause and double-click seek */}
+          <ScreenGestures />
+          <Captions />
+          <ActionBezel />
+          <CenterBigPlayButton />
+          <PlayerOverlayControls onLog={addLog} />
         </Root>
+
+        <Dashboard
+          logs={filteredLogs}
+          totalCount={logs.length}
+          filter={filter}
+          onSetFilter={setFilter}
+          onClear={() => setLogs([])}
+        />
       </PlayerProvider>
     </main>
   );
 };
+
+// YouTube-like Big Center Play Button — only on initial screen or after the video ends
+function CenterBigPlayButton() {
+  const { state, actions } = usePlayerContext();
+
+  const isInitialScreen = state.status === 'ready' && state.context.currentTime === 0;
+  const isEndedScreen = state.status === 'ended';
+
+  if (!isInitialScreen && !isEndedScreen) return null;
+
+  const isReplay = isEndedScreen;
+
+  return (
+    <button
+      type="button"
+      onClick={() => actions.play()}
+      aria-label={isReplay ? 'Replay video' : 'Play video'}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        margin: 'auto',
+        width: 68,
+        height: 68,
+        borderRadius: '50%',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        border: 'none',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        zIndex: 15,
+        transition: 'transform 0.15s ease, background-color 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'scale(1.1)';
+        e.currentTarget.style.backgroundColor = '#ff0000';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      }}
+    >
+      {isReplay ? (
+        // YouTube Replay Icon
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+          <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+        </svg>
+      ) : (
+        // YouTube Play Icon (Triangle)
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width="34"
+          height="34"
+          fill="currentColor"
+          style={{ marginLeft: 3 }}
+        >
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+function PlayerOverlayControls({
+  onLog,
+}: {
+  onLog: (source: LogEntry['source'], msg: string) => void;
+}) {
+  const { state, actions, controlsVisible, isSmall } = usePlayerContext();
+
+  const speedRates = [0.5, 1, 1.25, 1.5, 2];
+
+  const handleCycleSpeed = () => {
+    const current = state.context.playbackRate;
+    const nextRate = speedRates.find((rate) => rate > current + 0.0001) ?? speedRates[0];
+    actions.setPlaybackRate(nextRate);
+    onLog('FSM', `Playback rate set to ${nextRate}x`);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        background: controlsVisible
+          ? 'linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.3) 30%, transparent 60%, rgba(0, 0, 0, 0.5) 100%)'
+          : 'transparent',
+        opacity: controlsVisible ? 1 : 0,
+        // Crucial: 'none' ensures clicks in the middle pass through to ScreenGestures!
+        pointerEvents: 'none',
+        transition: 'opacity 0.25s ease-in-out',
+        zIndex: 10,
+      }}
+    >
+      {/* Top Bar: Interactive */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          color: '#ffffff',
+          pointerEvents: controlsVisible ? 'auto' : 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>Sprite Fight</span>
+          {state.context.activeChapter && (
+            <>
+              <span style={{ color: '#9ca3af' }}>•</span>
+              <span style={{ color: '#e5e7eb', fontSize: 13 }}>
+                {state.context.activeChapter.title}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Bar: Interactive */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          pointerEvents: controlsVisible ? 'auto' : 'none',
+        }}
+      >
+        <TimeSlider style={{ height: '14px' }} />
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: '#ffffff',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Play/Pause Button with SVG icons */}
+            <PlayButton style={{ flexShrink: 0 }} />
+
+            {/* Mute Button with SVG icon */}
+            <MuteButton style={{ flexShrink: 0 }} />
+
+            {/* YouTube-like volume slider (hidden on narrow screens) */}
+            {!isSmall && (
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={state.context.muted ? 0 : state.context.volume}
+                onChange={(e) => actions.setVolume(Number.parseFloat(e.target.value))}
+                style={{ width: 70, accentColor: '#ff0000', cursor: 'pointer' }}
+                aria-label="Volume slider"
+              />
+            )}
+
+            <div
+              style={{ display: 'flex', gap: 4, fontVariantNumeric: 'tabular-nums', fontSize: 13 }}
+            >
+              <TimeDisplay type="current" style={{ fontWeight: 600 }} />
+              <span style={{ color: '#9ca3af' }}>/</span>
+              <TimeDisplay type="duration" style={{ color: '#9ca3af' }} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isSmall ? (
+              // Single cycling speed button on narrow screens
+              <button
+                type="button"
+                onClick={handleCycleSpeed}
+                style={{
+                  background:
+                    state.context.playbackRate === 1
+                      ? 'rgba(255, 255, 255, 0.15)'
+                      : state.context.playbackRate >= 2
+                        ? '#ff0000'
+                        : '#ff8c00',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  padding: '4px 7px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                {state.context.playbackRate}x
+              </button>
+            ) : (
+              [0.5, 1, 1.5, 2].map((rate) => (
+                <button
+                  key={rate}
+                  type="button"
+                  onClick={() => {
+                    actions.setPlaybackRate(rate);
+                    onLog('FSM', `Playback rate set to ${rate}x`);
+                  }}
+                  style={{
+                    background:
+                      state.context.playbackRate === rate ? '#ff0000' : 'rgba(255, 255, 255, 0.15)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    padding: '4px 7px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  {rate}x
+                </button>
+              ))
+            )}
+
+            {/* YouTube CC Button with red active indicator */}
+            <button
+              type="button"
+              onClick={() => {
+                actions.toggleCaptions();
+                onLog('FSM', `Captions toggled: ${!state.context.captionsEnabled}`);
+              }}
+              style={{
+                background: 'none',
+                color: '#ffffff',
+                border: 'none',
+                borderBottom: state.context.captionsEnabled
+                  ? '2px solid #ff0000'
+                  : '2px solid transparent',
+                fontSize: 12,
+                padding: '4px 6px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              CC
+            </button>
+
+            <PIPButton style={{ flexShrink: 0 }} />
+            <FullscreenButton style={{ flexShrink: 0 }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({
+  logs,
+  totalCount,
+  filter,
+  onSetFilter,
+  onClear,
+}: {
+  logs: LogEntry[];
+  totalCount: number;
+  filter: 'ALL' | LogEntry['source'];
+  onSetFilter: (f: 'ALL' | LogEntry['source']) => void;
+  onClear: () => void;
+}) {
+  const { state } = usePlayerContext();
+  const [tab, setTab] = useState<'INSPECTOR' | 'LOGS' | 'CHAPTERS'>('LOGS');
+
+  return (
+    <div
+      style={{
+        marginTop: 24,
+        border: '1px solid #e5e7eb',
+        borderRadius: 8,
+        backgroundColor: '#ffffff',
+      }}
+    >
+      <div
+        style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}
+      >
+        <button
+          type="button"
+          onClick={() => setTab('LOGS')}
+          style={{
+            padding: '10px 18px',
+            fontWeight: 600,
+            fontSize: 13,
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            borderBottom: tab === 'LOGS' ? '2px solid #2563eb' : 'none',
+            color: tab === 'LOGS' ? '#2563eb' : '#6b7280',
+          }}
+        >
+          Event Logs ({totalCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('INSPECTOR')}
+          style={{
+            padding: '10px 18px',
+            fontWeight: 600,
+            fontSize: 13,
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            borderBottom: tab === 'INSPECTOR' ? '2px solid #2563eb' : 'none',
+            color: tab === 'INSPECTOR' ? '#2563eb' : '#6b7280',
+          }}
+        >
+          FSM Context Inspector
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('CHAPTERS')}
+          style={{
+            padding: '10px 18px',
+            fontWeight: 600,
+            fontSize: 13,
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            borderBottom: tab === 'CHAPTERS' ? '2px solid #2563eb' : 'none',
+            color: tab === 'CHAPTERS' ? '#2563eb' : '#6b7280',
+          }}
+        >
+          Chapters & Captions
+        </button>
+      </div>
+
+      <div style={{ padding: 16 }}>
+        {tab === 'LOGS' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {(['ALL', 'FSM', 'MEDIA', 'SHORTCUT', 'STORAGE', 'SESSION'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => onSetFilter(cat)}
+                    style={{
+                      fontSize: 11,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      border: '1px solid #d1d5db',
+                      background: filter === cat ? '#2563eb' : '#ffffff',
+                      color: filter === cat ? '#ffffff' : '#374151',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={onClear}
+                style={{
+                  fontSize: 11,
+                  color: '#dc2626',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear logs
+              </button>
+            </div>
+            <div
+              style={{
+                height: 200,
+                overflowY: 'auto',
+                backgroundColor: '#111827',
+                color: '#38bdf8',
+                padding: 12,
+                borderRadius: 6,
+                fontSize: 12,
+                fontFamily: 'monospace',
+              }}
+            >
+              {logs.length === 0 ? (
+                <div style={{ color: '#6b7280' }}>Waiting for player events...</div>
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} style={{ marginBottom: 4, display: 'flex', gap: 8 }}>
+                    <span style={{ color: '#9ca3af' }}>[{log.time}]</span>
+                    <span
+                      style={{
+                        color:
+                          log.source === 'FSM'
+                            ? '#34d399'
+                            : log.source === 'MEDIA'
+                              ? '#60a5fa'
+                              : log.source === 'SESSION'
+                                ? '#f472b6'
+                                : '#fbbf24',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {log.source}:
+                    </span>
+                    <span style={{ color: '#f3f4f6' }}>{log.message}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === 'INSPECTOR' && (
+          <div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: '#4b5563' }}>Status:</span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 12,
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  backgroundColor: state.status === 'playing' ? '#dcfce7' : '#f3f4f6',
+                  color: state.status === 'playing' ? '#166534' : '#1f2937',
+                }}
+              >
+                {state.status}
+              </span>
+            </div>
+            <pre
+              style={{
+                backgroundColor: '#111827',
+                color: '#a7f3d0',
+                padding: 14,
+                borderRadius: 6,
+                fontSize: 12,
+                maxHeight: 220,
+                overflowY: 'auto',
+                margin: 0,
+              }}
+            >
+              {JSON.stringify(state.context, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        {tab === 'CHAPTERS' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+            <div>
+              <strong>Configured Chapters:</strong>
+              <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                {SAMPLE_CHAPTERS.map((c) => (
+                  <li key={c.startTime}>
+                    {c.title} ({c.startTime}s - {c.endTime}s)
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <strong>Configured Subtitles (WebVTT cues):</strong>
+              <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                {SAMPLE_CAPTIONS.map((cue) => (
+                  <li key={cue.startTime}>
+                    {cue.startTime}s - {cue.endTime}s: "{cue.text}"
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

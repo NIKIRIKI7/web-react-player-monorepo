@@ -4,15 +4,42 @@
 
 ```ts
 
+import { CaptionCue } from '@web-react-player/core';
+import { Chapter } from '@web-react-player/core';
 import { ComponentProps } from 'react';
-import { Context } from 'react';
 import { JSX } from 'react';
+import { PlayerActionRecord } from '@web-react-player/core';
 import { PlayerEvent } from '@web-react-player/core';
 import { PlayerSnapshot } from '@web-react-player/core';
 import { ReactNode } from 'react';
 
 // @public (undocumented)
+export function ActionBezel(input: ActionBezelProps): JSX.Element | null;
+
+// @public (undocumented)
+export interface ActionBezelProps extends ComponentProps<'div'> {
+}
+
+export { CaptionCue }
+
+// @public (undocumented)
+export function Captions(input: CaptionsProps): JSX.Element | null;
+
+// @public (undocumented)
+export interface CaptionsProps extends ComponentProps<'section'> {
+}
+
+export { Chapter }
+
+// @public (undocumented)
 export function formatTime(seconds: number): string;
+
+// @public (undocumented)
+export function FullscreenButton(input: FullscreenButtonProps): JSX.Element;
+
+// @public (undocumented)
+export interface FullscreenButtonProps extends ComponentProps<'button'> {
+}
 
 // @public (undocumented)
 export function MuteButton(input: MuteButtonProps): JSX.Element;
@@ -22,21 +49,59 @@ export interface MuteButtonProps extends ComponentProps<'button'> {
 }
 
 // @public (undocumented)
+export function PIPButton(input: PIPButtonProps): JSX.Element;
+
+// @public (undocumented)
+export interface PIPButtonProps extends ComponentProps<'button'> {
+}
+
+// @public (undocumented)
 export function PlayButton(input: PlayButtonProps): JSX.Element;
 
 // @public (undocumented)
 export interface PlayButtonProps extends ComponentProps<'button'> {
 }
 
-// @public (undocumented)
-export const PlayerContext: Context<PlayerContextValue | null>;
+export { PlayerActionRecord }
 
 // @public (undocumented)
 export interface PlayerContextValue {
     // (undocumented)
+    actions: {
+        play: () => Promise<void>;
+        pause: () => void;
+        togglePlay: () => Promise<void>;
+        seek: (time: number) => void;
+        seekRelative: (seconds: number) => void;
+        setVolume: (volume: number) => void;
+        toggleMute: () => void;
+        setPlaybackRate: (rate: number) => void;
+        toggleFullscreen: () => Promise<void>;
+        togglePIP: () => Promise<void>;
+        toggleTheater: () => void;
+        toggleCaptions: () => void;
+        triggerAction: (type: string, value?: string | number) => void;
+    };
+    // (undocumented)
+    controlsVisible: boolean;
+    // (undocumented)
+    isScrubbing: boolean;
+    // (undocumented)
+    isSmall: boolean;
+    // (undocumented)
+    rootRef: React.RefObject<HTMLDivElement | null>;
+    // (undocumented)
     send: (event: PlayerEvent) => void;
     // (undocumented)
+    setControlsVisible: (visible: boolean) => void;
+    // (undocumented)
+    setIsScrubbing: (scrubbing: boolean) => void;
+    // (undocumented)
+    setIsSmall: (isSmall: boolean) => void;
+    // (undocumented)
     state: PlayerSnapshot;
+    // (undocumented)
+    videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
 // @public (undocumented)
@@ -46,6 +111,10 @@ export function PlayerProvider(input: PlayerProviderProps): JSX.Element;
 export interface PlayerProviderProps {
     // (undocumented)
     children: ReactNode;
+    // (undocumented)
+    initialCaptions?: CaptionCue[];
+    // (undocumented)
+    initialChapters?: Chapter[];
 }
 
 // @public (undocumented)
@@ -54,7 +123,18 @@ export function Root(input: RootProps): JSX.Element;
 // @public (undocumented)
 export interface RootProps extends ComponentProps<'div'> {
     // (undocumented)
+    idleTimeout?: number;
+    // (undocumented)
     keyboardShortcuts?: boolean;
+    // (undocumented)
+    smallWhenWidth?: number;
+}
+
+// @public (undocumented)
+export function ScreenGestures(input: ScreenGesturesProps): JSX.Element;
+
+// @public (undocumented)
+export interface ScreenGesturesProps extends ComponentProps<'div'> {
 }
 
 // @public (undocumented)
@@ -70,8 +150,21 @@ export interface TimeDisplayProps extends ComponentProps<'div'> {
 export function TimeSlider(input: TimeSliderProps): JSX.Element;
 
 // @public (undocumented)
-export interface TimeSliderProps extends Omit<ComponentProps<'input'>, 'type' | 'value' | 'min' | 'max'> {
+export interface TimeSliderProps extends Omit<ComponentProps<'div'>, 'onChange'> {
+    // (undocumented)
+    bufferClassName?: string;
+    // (undocumented)
+    previewClassName?: string;
+    // (undocumented)
+    progressClassName?: string;
+    // (undocumented)
+    thumbClassName?: string;
+    // (undocumented)
+    trackClassName?: string;
 }
+
+// @public (undocumented)
+export const UI_PACKAGE_READY = true;
 
 // @public (undocumented)
 export function usePlayerContext(): PlayerContextValue;
