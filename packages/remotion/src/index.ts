@@ -5,6 +5,7 @@ export * from './plugins/LucidePlugin';
 export * from './plugins/PluginManager';
 export * from './plugins/TailwindPlugin';
 export * from './plugins/ThreePlugin';
+export * from './providers/RemotionProvider';
 export * from './types';
 
 import { BrowserTsxCompiler } from './compiler/TsxCompiler';

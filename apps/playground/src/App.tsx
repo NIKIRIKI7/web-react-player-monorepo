@@ -1,18 +1,10 @@
 import {
   createDefaultRemotionSuite,
   type RemotionCompositionConfig,
+  RemotionProvider,
   type RemotionSource,
 } from '@web-react-player/remotion';
-import {
-  FullscreenButton,
-  MediaProvider,
-  PlayButton,
-  PlayerProvider,
-  Root,
-  TimeDisplay,
-  TimeSlider,
-  VolumeControl,
-} from '@web-react-player/ui';
+import { DefaultStandardLayout, PlayerProvider, Root } from '@web-react-player/ui';
 import { useMemo, useState } from 'react';
 
 const SAMPLE_TSX_ANIMATION = `
@@ -118,43 +110,16 @@ export const App = () => {
           }}
         >
           <Root>
-            <MediaProvider
-              type="remotion"
-              remotionSource={remotionSource}
-              remotionConfig={remotionConfig}
+            {/* 1. Data layer: media engine adapter (lives in its own package) */}
+            <RemotionProvider
+              source={remotionSource}
+              config={remotionConfig}
               pluginManager={suite.pluginManager}
               compiler={suite.compiler}
             />
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: '12px 16px',
-                background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <TimeSlider />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  color: '#fff',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <PlayButton />
-                  <VolumeControl />
-                  <TimeDisplay />
-                </div>
-                <FullscreenButton />
-              </div>
-            </div>
+
+            {/* 2. Presentation layer: ready-made player layout from ui */}
+            <DefaultStandardLayout debug={false} />
           </Root>
         </div>
       </PlayerProvider>

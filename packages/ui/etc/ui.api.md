@@ -113,6 +113,15 @@ export const DEFAULT_CAPTION_STYLES: CaptionStylePreferences;
 export const DEFAULT_HOTKEYS: Record<PlayerCommand, string[]>;
 
 // @public (undocumented)
+export function DefaultStandardLayout(input: DefaultStandardLayoutProps): JSX.Element;
+
+// @public (undocumented)
+export interface DefaultStandardLayoutProps extends ComponentProps<'div'> {
+    // (undocumented)
+    debug?: boolean;
+}
+
+// @public (undocumented)
 export function DocumentPipPortal(input: DocumentPipPortalProps): JSX.Element;
 
 // @public (undocumented)
@@ -167,6 +176,13 @@ export type HotkeyHandler = (context: PlayerContextValue, event: KeyboardEvent) 
 export type HotkeysMap = Record<string, string | string[] | HotkeyAction | HotkeyBindingDescriptor>;
 
 // @public (undocumented)
+export function Html5VideoProvider(input: Html5VideoProviderProps): JSX.Element;
+
+// @public (undocumented)
+export interface Html5VideoProviderProps extends ComponentProps<'video'> {
+}
+
+// @public (undocumented)
 export function InteractiveMarkers(input: InteractiveMarkersProps): JSX.Element | null;
 
 // @public (undocumented)
@@ -194,18 +210,6 @@ export interface MatchProps {
     children: ReactNode | ((isMatched: boolean) => ReactNode);
     // (undocumented)
     media: MatchMedia;
-}
-
-// @public (undocumented)
-function MediaProvider_2(input: MediaProviderProps): JSX.Element;
-export { MediaProvider_2 as MediaProvider }
-
-// @public (undocumented)
-export interface MediaProviderProps extends ComponentProps<'video'> {
-    // (undocumented)
-    src: string;
-    // (undocumented)
-    type?: 'video' | 'hls' | 'remotion';
 }
 
 // @public (undocumented)

@@ -49,6 +49,9 @@ export type {
   HotkeysMap,
   PlayerCommand,
 } from './hotkeys/types';
+// Layouts
+export type { DefaultStandardLayoutProps } from './layouts/DefaultStandardLayout';
+export { DefaultStandardLayout } from './layouts/DefaultStandardLayout';
 export type { ActionBezelProps } from './primitives/ActionBezel';
 export { ActionBezel } from './primitives/ActionBezel';
 export type { AmbientBackgroundProps } from './primitives/AmbientBackground';
@@ -65,8 +68,6 @@ export type { InteractiveMarkersProps } from './primitives/InteractiveMarkers';
 export { InteractiveMarkers } from './primitives/InteractiveMarkers';
 export type { MatchMedia, MatchProps } from './primitives/Match';
 export { Match } from './primitives/Match';
-export type { MediaProviderProps } from './primitives/MediaProvider';
-export { MediaProvider } from './primitives/MediaProvider';
 export type { MuteButtonProps } from './primitives/MuteButton';
 export { MuteButton } from './primitives/MuteButton';
 export type { PIPButtonProps } from './primitives/PIPButton';
@@ -90,6 +91,10 @@ export type { TimeSliderProps } from './primitives/TimeSlider';
 export { TimeSlider } from './primitives/TimeSlider';
 export type { VolumeControlProps } from './primitives/VolumeControl';
 export { VolumeControl } from './primitives/VolumeControl';
+
+// Providers
+export type { Html5VideoProviderProps } from './providers/Html5VideoProvider';
+export { Html5VideoProvider } from './providers/Html5VideoProvider';
 
 // Utils
 export { formatTime } from './utils/formatTime';

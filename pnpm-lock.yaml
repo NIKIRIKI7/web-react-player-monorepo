@@ -296,6 +296,9 @@ importers:
       '@remotion/web-renderer':
         specifier: ^4.0.526
         version: 4.0.527(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@web-react-player/ui':
+        specifier: workspace:*
+        version: link:../ui
       lucide-react:
         specifier: ^1.47.0
         version: 1.47.0(react@19.3.0)
@@ -333,9 +336,6 @@ importers:
       '@web-react-player/core':
         specifier: workspace:*
         version: link:../core
-      '@web-react-player/remotion':
-        specifier: workspace:*
-        version: link:../remotion
     devDependencies:
       '@types/react':
         specifier: ^19.3.0
