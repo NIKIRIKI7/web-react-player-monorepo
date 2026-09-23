@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@web-react-player/core': resolve(__dirname, '../../packages/core/src/index.ts'),
+      '@web-react-player/remotion': resolve(__dirname, '../../packages/remotion/src/index.ts'),
       '@web-react-player/ui': resolve(__dirname, '../../packages/ui/src/index.ts'),
     },
   },

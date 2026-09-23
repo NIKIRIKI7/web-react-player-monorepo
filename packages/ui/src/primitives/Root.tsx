@@ -177,6 +177,12 @@ export function Root({
       data-controls-visible={controlsVisible ? '' : undefined}
       data-controls-hidden={!controlsVisible ? '' : undefined}
       style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'block',
+        overflow: 'hidden',
+        backgroundColor: '#000000',
         ...style,
         ...captionVars,
         ...(state.context.brightness !== 1

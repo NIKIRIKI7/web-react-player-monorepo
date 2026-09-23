@@ -153,6 +153,14 @@ export class PlayerMachine {
             nextContext.qualities = event.qualities;
             nextContext.currentQuality = event.qualities[0] || null;
           }
+        } else if (event.type === 'METADATA_LOADED' || event.type === 'CAN_PLAY') {
+          nextStatus = 'ready';
+          if ('duration' in event && event.duration > 0) {
+            nextContext.duration = event.duration;
+            nextContext.durationInFrames = Math.round(event.duration * nextContext.fps);
+          }
+        } else if (event.type === 'PLAY' || event.type === 'PLAYING') {
+          nextStatus = 'playing';
         }
         break;
       case 'loading':

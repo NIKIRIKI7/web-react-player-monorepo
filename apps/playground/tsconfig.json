@@ -5,6 +5,7 @@
     "noEmit": true,
     "paths": {
       "@web-react-player/core": ["../../packages/core/src/index.ts"],
+      "@web-react-player/remotion": ["../../packages/remotion/src/index.ts"],
       "@web-react-player/ui": ["../../packages/ui/src/index.ts"]
     }
   },
