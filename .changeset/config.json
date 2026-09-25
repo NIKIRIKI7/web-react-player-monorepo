@@ -4,7 +4,7 @@
   "access": "public",
   "format": "auto",
   "changelog": [
-    "@changesets/cli/changelog-git",
+    "@changesets/cli/changelog",
     {
       "repo": "NIKIRIKI7/web-react-player-monorepo.git"
     }
