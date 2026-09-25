@@ -1,9 +1,13 @@
 import type { PlayerRef } from '@remotion/player';
 import { Player } from '@remotion/player';
-import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { RemotionPluginManager } from '../plugins/PluginManager';
-import type { ITsxCompiler, RemotionCompositionConfig, RemotionSource } from '../types';
+import type {
+  CompilerError,
+  ITsxCompiler,
+  RemotionCompositionConfig,
+  RemotionSource,
+} from '../types';
 
 export interface RemotionPlaybackAdapterProps {
   source: RemotionSource;
@@ -30,6 +34,27 @@ const DEFAULT_CONFIG: RemotionCompositionConfig = {
   height: 1080,
 };
 
+// React Error Boundary для перехвата рантайм-ошибок внутри Remotion Player
+class AdapterErrorBoundary extends React.Component<
+  { children: React.ReactNode; onError: (error: Error) => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; onError: (error: Error) => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = ({
   source,
   pluginManager,
@@ -51,41 +76,32 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
   const [resolvedComponent, setResolvedComponent] = useState<React.ComponentType<
     Record<string, unknown>
   > | null>(null);
+
   const [activeConfig, setActiveConfig] = useState<RemotionCompositionConfig>(defaultConfig);
   const [isCompiling, setIsCompiling] = useState(false);
+  const [compileError, setCompileError] = useState<Error | CompilerError | null>(null);
+  const [runtimeError, setRuntimeError] = useState<Error | null>(null);
+
   const isInternalSeeking = useRef(false);
 
-  // Стабильные ссылки на колбэки для исключения циклов
+  // Стабильные ссылки
   const onMetadataLoadedRef = useRef(onMetadataLoaded);
   onMetadataLoadedRef.current = onMetadataLoaded;
-
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
-
   const onTimeUpdateRef = useRef(onTimeUpdate);
   onTimeUpdateRef.current = onTimeUpdate;
-
   const onPlaybackStateChangeRef = useRef(onPlaybackStateChange);
   onPlaybackStateChangeRef.current = onPlaybackStateChange;
 
-  // Кэш последнего источника — предотвращает зацикливание при ошибке компиляции
-  const lastSourceKeyRef = useRef<string | null>(null);
-
-  const currentSourceKey =
-    source.type === 'code'
-      ? `code:${source.code}`
-      : `component:${source.component.displayName || source.component.name || 'Anonymous'}`;
-
-  // 1. Компиляция и резолвинг компонента при изменении источника
+  // 1. Компиляция и рефлексия
   useEffect(() => {
-    if (lastSourceKeyRef.current === currentSourceKey) {
-      return;
-    }
-
     let isCancelled = false;
-
     const resolveSource = async () => {
       setIsCompiling(true);
+      setCompileError(null);
+      setRuntimeError(null); // Сбрасываем старые ошибки при новом коде
+
       try {
         if (source.type === 'component') {
           const mergedConfig: RemotionCompositionConfig = {
@@ -93,7 +109,6 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
             ...source.config,
           };
           if (isCancelled) return;
-          lastSourceKeyRef.current = currentSourceKey;
           setActiveConfig(mergedConfig);
           setResolvedComponent(() => source.component);
           onMetadataLoadedRef.current(
@@ -101,15 +116,19 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
             mergedConfig.fps,
           );
         } else {
-          const { Component, detectedConfig } = await compiler.compile(source.code);
-          if (isCancelled) return;
+          // Вызываем компилятор, прокидываем VFS (assets)
+          const { Component, detectedConfig } = await compiler.compile(
+            source.code,
+            source.assets || {},
+          );
 
+          if (isCancelled) return;
           const mergedConfig: RemotionCompositionConfig = {
             ...defaultConfig,
             ...detectedConfig,
             ...source.config,
           };
-          lastSourceKeyRef.current = currentSourceKey;
+
           setActiveConfig(mergedConfig);
           setResolvedComponent(() => Component);
           onMetadataLoadedRef.current(
@@ -119,9 +138,9 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
         }
       } catch (err) {
         if (!isCancelled) {
-          // Запоминаем текущий ошибочный ключ, чтобы не повторять компиляцию в цикле
-          lastSourceKeyRef.current = currentSourceKey;
-          onErrorRef.current(err instanceof Error ? err : new Error(String(err)));
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          setCompileError(errorObj);
+          onErrorRef.current(errorObj);
         }
       } finally {
         if (!isCancelled) {
@@ -129,12 +148,11 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
         }
       }
     };
-
     resolveSource();
     return () => {
       isCancelled = true;
     };
-  }, [currentSourceKey, source, compiler, defaultConfig]);
+  }, [source, compiler, defaultConfig]);
 
   // 2. Оборачивание в плагины
   const FinalRenderComponent = useMemo(() => {
@@ -142,58 +160,50 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
     return pluginManager.applyComponentWrappers(resolvedComponent, activeConfig);
   }, [resolvedComponent, pluginManager, activeConfig]);
 
-  // 3. Синхронизация FSM -> Remotion Player (Воспроизведение / Пауза)
+  // 3-5. Синхронизация состояний (Пропуск если ошибка)
   useEffect(() => {
     const player = playerRef.current;
-    if (!player) return;
+    if (!player || compileError || runtimeError) return;
 
     if (fsmStatus === 'playing' && !player.isPlaying()) {
       player.play();
     } else if (fsmStatus !== 'playing' && player.isPlaying()) {
       player.pause();
     }
-  }, [fsmStatus]);
+  }, [fsmStatus, compileError, runtimeError]);
 
-  // 4. Синхронизация FSM -> Remotion Player (Перемотка)
   useEffect(() => {
     const player = playerRef.current;
-    if (!player || isInternalSeeking.current) return;
-
+    if (!player || isInternalSeeking.current || compileError || runtimeError) return;
     const targetFrame = Math.round(currentTime * activeConfig.fps);
-    const currentFrame = player.getCurrentFrame();
-
-    if (Math.abs(currentFrame - targetFrame) > 1) {
+    if (Math.abs(player.getCurrentFrame() - targetFrame) > 1) {
       player.seekTo(targetFrame);
     }
-  }, [currentTime, activeConfig.fps]);
+  }, [currentTime, activeConfig.fps, compileError, runtimeError]);
 
-  // 5. Синхронизация громкости
   useEffect(() => {
     const player = playerRef.current;
-    if (!player) return;
-
+    if (!player || compileError || runtimeError) return;
     if (muted) {
       player.mute();
     } else {
       player.unmute();
       player.setVolume(volume);
     }
-  }, [volume, muted]);
+  }, [volume, muted, compileError, runtimeError]);
 
-  // 6. Подписка Remotion Player -> FSM (Обратный поток событий)
+  // 6. Подписка на события
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;
 
     const handleFrameUpdate = (e: { detail: { frame: number } }) => {
       isInternalSeeking.current = true;
-      const seconds = e.detail.frame / activeConfig.fps;
-      onTimeUpdateRef.current(seconds);
+      onTimeUpdateRef.current(e.detail.frame / activeConfig.fps);
       window.requestAnimationFrame(() => {
         isInternalSeeking.current = false;
       });
     };
-
     const handlePlay = () => onPlaybackStateChangeRef.current(true);
     const handlePause = () => onPlaybackStateChangeRef.current(false);
 
@@ -206,12 +216,90 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
       player.removeEventListener('play', handlePlay);
       player.removeEventListener('pause', handlePause);
     };
-  }, [activeConfig.fps]);
+  }, [activeConfig.fps]); // Переподписка при смене компонента
 
+  // --- RENDER PHASES ---
+
+  // Фаза ошибки DX
+  const activeError = compileError || runtimeError;
+  if (activeError) {
+    const isCompilerErr = 'type' in activeError;
+    const typeLabel = isCompilerErr ? (activeError as CompilerError).type : 'Runtime Error';
+    const suggestion = isCompilerErr
+      ? (activeError as CompilerError).suggestion
+      : 'Проверьте логику ваших React-компонентов или хуков Remotion.';
+
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          padding: '2rem',
+          background: '#020617',
+          color: '#f8fafc',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
+          ...style,
+        }}
+        className={className}
+      >
+        <div
+          style={{
+            background: '#0f172a',
+            borderLeft: '4px solid #ef4444',
+            padding: '1.5rem',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <h3
+            style={{
+              margin: '0 0 0.75rem 0',
+              color: '#ef4444',
+              fontSize: '1.125rem',
+              fontFamily: 'sans-serif',
+            }}
+          >
+            {typeLabel}
+          </h3>
+          <p
+            style={{
+              margin: 0,
+              fontFamily: 'monospace',
+              fontSize: '0.9rem',
+              opacity: 0.9,
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.5,
+            }}
+          >
+            {activeError.message}
+          </p>
+          {suggestion && (
+            <div
+              style={{
+                marginTop: '1rem',
+                color: '#38bdf8',
+                fontSize: '0.9rem',
+                fontFamily: 'sans-serif',
+                background: '#0369a120',
+                padding: '0.75rem',
+                borderRadius: '0.375rem',
+              }}
+            >
+              💡 <b>Подсказка:</b> {suggestion}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Фаза загрузки
   if (isCompiling) {
     return (
       <div
-        data-media-provider-loading=""
         style={{
           width: '100%',
           height: '100%',
@@ -226,13 +314,14 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
         }}
         className={className}
       >
-        <span>Compiling TSX Animation...</span>
+        <span style={{ animation: 'pulse 1.5s infinite opacity' }}>Compiling TSX Engine...</span>
       </div>
     );
   }
 
   if (!FinalRenderComponent) return null;
 
+  // Фаза плеера
   return (
     <div
       data-media-provider="remotion"
@@ -243,30 +332,32 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#000000',
+        backgroundColor: '#000',
         ...style,
       }}
       className={className}
     >
-      <Player
-        ref={playerRef}
-        acknowledgeRemotionLicense
-        component={FinalRenderComponent}
-        inputProps={source.inputProps ?? {}}
-        durationInFrames={activeConfig.durationInFrames}
-        compositionWidth={activeConfig.width}
-        compositionHeight={activeConfig.height}
-        fps={activeConfig.fps}
-        playbackRate={playbackRate}
-        controls={false}
-        loop={false}
-        style={{
-          width: '100%',
-          height: '100%',
-          maxWidth: '100%',
-          maxHeight: '100%',
-        }}
-      />
+      <AdapterErrorBoundary onError={setRuntimeError}>
+        <Player
+          ref={playerRef}
+          acknowledgeRemotionLicense
+          component={FinalRenderComponent}
+          inputProps={source.inputProps ?? {}}
+          durationInFrames={activeConfig.durationInFrames}
+          compositionWidth={activeConfig.width}
+          compositionHeight={activeConfig.height}
+          fps={activeConfig.fps}
+          playbackRate={playbackRate}
+          controls={false}
+          loop={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            maxWidth: '100%',
+            maxHeight: '100%',
+          }}
+        />
+      </AdapterErrorBoundary>
     </div>
   );
 };

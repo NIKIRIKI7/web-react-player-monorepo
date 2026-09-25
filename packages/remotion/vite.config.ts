@@ -23,6 +23,7 @@ export default defineConfig({
         'react/jsx-runtime',
         '@remotion/player',
         '@remotion/web-renderer',
+        '@remotion/media',
         '@web-react-player/ui',
         'remotion',
         'lucide-react',

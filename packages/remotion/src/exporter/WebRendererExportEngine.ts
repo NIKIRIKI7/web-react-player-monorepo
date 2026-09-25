@@ -75,6 +75,11 @@ export class WebRendererExportEngine implements IExportEngine {
       this.pluginManager.notifyExportProgress(progressData);
     };
 
+    // Качество: пресет -> конкретные битрейты (bps). Явные переопределения имеют приоритет.
+    const videoBitrate: number =
+      options.videoBitrate ?? this.resolveVideoBitrate(config, options.quality);
+    const audioBitrate: number = options.audioBitrate ?? this.resolveAudioBitrate(options.quality);
+
     // Реальный API @remotion/web-renderer@4.0.527
     const renderHandle = await webRenderer.renderMediaOnWeb({
       composition: {
@@ -87,6 +92,8 @@ export class WebRendererExportEngine implements IExportEngine {
       },
       container: options.format === 'webm' ? 'webm' : 'mp4',
       videoCodec: options.videoCodec ?? 'h264',
+      videoBitrate,
+      audioBitrate,
       licenseKey: 'free-license',
       inputProps,
       onProgress: (p: { progress: number; renderedFrames: number; encodedFrames: number }) => {
@@ -118,5 +125,33 @@ export class WebRendererExportEngine implements IExportEngine {
       url,
       download,
     };
+  }
+
+  // Пресет качества -> битрейт видео (bps)
+  private resolveVideoBitrate(
+    config: RemotionCompositionConfig,
+    quality?: ExportOptions['quality'],
+  ): number {
+    switch (quality) {
+      case 'draft':
+        return 1_000_000; // 1 Mbps — быстрый рендер для теста
+      case 'high':
+        return 15_000_000; // 15 Mbps — максимальное качество
+      default:
+        // Динамическая оценка под разрешение и fps
+        return Math.round(config.width * config.height * config.fps * 0.1);
+    }
+  }
+
+  // Пресет качества -> битрейт аудио (bps)
+  private resolveAudioBitrate(quality?: ExportOptions['quality']): number {
+    switch (quality) {
+      case 'draft':
+        return 64_000; // 64 kbps
+      case 'high':
+        return 320_000; // 320 kbps
+      default:
+        return 128_000; // 128 kbps
+    }
   }
 }

@@ -130,9 +130,9 @@ export function PlayerProvider({
     if (initialMarkers) inst.send({ type: 'SET_MARKERS', markers: initialMarkers });
     if (initialQualities) inst.send({ type: 'SET_QUALITIES', qualities: initialQualities });
     // Middleware plugin example: surface engine-level errors in the console.
-    inst.use((event, snapshot, next) => {
+    inst.use((event, _snapshot, next) => {
       if (event.type === 'ERROR') {
-        console.error('[web-react-player] media error:', snapshot.context.error);
+        console.error('[web-react-player] media error:', event.error);
       }
       next(event);
     });

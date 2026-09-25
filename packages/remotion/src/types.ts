@@ -17,6 +17,8 @@ export type RemotionSource =
   | {
       type: 'code';
       code: string;
+      // Виртуальная файловая система: ключ — имя файла в коде, значение — Blob URL или прямая ссылка
+      assets?: Record<string, string>;
       inputProps?: Record<string, unknown>;
       config?: Partial<RemotionCompositionConfig>;
     };
@@ -39,6 +41,14 @@ export interface ExportOptions {
   videoCodec?: 'h264' | 'vp8' | 'vp9';
   audioCodec?: string;
   fileName?: string;
+
+  // Удобный пресет качества
+  quality?: 'draft' | 'standard' | 'high';
+
+  // Явные переопределения (для профи)
+  videoBitrate?: number; // в битах в секунду (bps)
+  audioBitrate?: number; // в битах в секунду (bps)
+
   onProgress?: (progress: ExportProgressData) => void;
 }
 
@@ -64,9 +74,15 @@ export interface IRemotionPlugin {
   dispose?: () => void;
 }
 
+export interface CompilerError extends Error {
+  type: 'SyntaxError' | 'MissingComponentError' | 'InvalidConfigError' | 'RuntimeError';
+  suggestion?: string;
+}
+
 export interface ITsxCompiler {
   compile(
     code: string,
+    assets?: Record<string, string>,
     virtualScope?: Record<string, unknown>,
   ): Promise<{
     Component: React.ComponentType<Record<string, unknown>>;

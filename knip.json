@@ -5,9 +5,7 @@
     "@changesets/changelog-github",
     "@microsoft/api-extractor",
     "fast-check",
-    "publint",
-    "react-dom",
-    "@types/react-dom"
+    "publint"
   ],
   "workspaces": {
     "packages/ui": {

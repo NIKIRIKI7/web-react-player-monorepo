@@ -7,14 +7,14 @@ export interface Html5VideoProviderProps extends ComponentProps<'video'> {}
 // renders a native <video> element and forwards native media events into the
 // shared FSM. The UI package does not know anything about Remotion or HLS —
 // other engines live in their own packages and speak to the same context.
-export function Html5VideoProvider({ src, style, ...props }: Html5VideoProviderProps) {
+export function Html5VideoProvider({ src, style, crossOrigin, ...props }: Html5VideoProviderProps) {
   const { videoRef, send } = usePlayerContext();
 
   return (
     <video
       ref={videoRef as Ref<HTMLVideoElement>}
       src={src}
-      crossOrigin="anonymous"
+      crossOrigin={crossOrigin}
       playsInline
       data-media-provider=""
       onTimeUpdate={(e) => send({ type: 'TIME_UPDATE', currentTime: e.currentTarget.currentTime })}
@@ -25,7 +25,13 @@ export function Html5VideoProvider({ src, style, ...props }: Html5VideoProviderP
       onPlay={() => send({ type: 'PLAYING' })}
       onPause={() => send({ type: 'PAUSE' })}
       onEnded={() => send({ type: 'ENDED' })}
-      onError={() => send({ type: 'ERROR', error: new Error('Video playback error') })}
+      onError={(e) => {
+        const mediaError = e.currentTarget.error;
+        const errorMessage = mediaError
+          ? `MediaError (code ${mediaError.code}): ${mediaError.message || 'Сетевая ошибка или неверный формат'}`
+          : 'Video playback error';
+        send({ type: 'ERROR', error: new Error(errorMessage) });
+      }}
       style={{
         width: '100%',
         height: '100%',
