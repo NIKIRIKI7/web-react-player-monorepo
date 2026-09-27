@@ -54,14 +54,14 @@
 ```text
 web-react-player/
 ├── packages/
-│   ├── core/                          # @web-react-player/core   (v1.0.0)
+│   ├── core/                          # @web-react-player/core   (v1.0.2)
 │   │   ├── src/fsm/types.ts           # PlayerStatus, PlayerContext, PlayerEvent
 │   │   ├── src/fsm/machine.ts         # PlayerMachine + createPlayerMachine
 │   │   ├── src/index.ts
 │   │   ├── tests/machine.test.ts
 │   │   ├── etc/core.api.md            # слепок API Extractor
 │   │   └── README.md
-│   ├── ui/                            # @web-react-player/ui     (v1.0.0)
+│   ├── ui/                            # @web-react-player/ui     (v1.1.1)
 │   │   ├── src/context/               # PlayerProvider, usePlayerContext, usePlayerState
 │   │   ├── src/primitives/            # 20 headless-компонентов
 │   │   ├── src/providers/             # Html5VideoProvider
@@ -70,7 +70,7 @@ web-react-player/
 │   │   ├── src/captions/              # стили субтитров + localStorage
 │   │   ├── src/utils/                 # formatTime, Slot
 │   │   └── tests/ui.test.ts
-│   └── remotion/                      # @web-react-player/remotion (v0.1.0)
+│   └── remotion/                      # @web-react-player/remotion (v0.2.1)
 │       ├── src/compiler/              # BrowserTsxCompiler, assetResolver (VFS)
 │       ├── src/plugins/               # PluginManager + 4 встроенных плагина
 │       ├── src/exporter/              # WebRendererExportEngine (WebCodecs)

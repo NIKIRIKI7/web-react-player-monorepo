@@ -1,5 +1,14 @@
 # @web-react-player/remotion
 
+## 0.2.1
+
+### Patch Changes
+
+- docs: добавить в README пакетов разделы об архитектуре и DX — Widget-Driven Architecture, Virtual Environment & Sandboxing, Declarative Audio, Gestures & Smart UX, единый источник правды.
+- Updated dependencies
+  - @web-react-player/core@1.0.2
+  - @web-react-player/ui@1.1.1
+
 ## 0.2.0
 
 ### Minor Changes

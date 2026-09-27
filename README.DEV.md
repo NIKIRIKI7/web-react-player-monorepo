@@ -14,9 +14,9 @@
 ```text
 web-react-player/
 ├── packages/
-│   ├── core/         # @web-react-player/core (v1.0.0): FSM машина состояний и типы, без React и DOM
-│   ├── ui/           # @web-react-player/ui (v1.0.0): React-провайдер, headless-примитивы, раскладка, хоткеи
-│   └── remotion/     # @web-react-player/remotion (v0.1.0): TSX-компилятор, плагины, экспорт, виджеты
+│   ├── core/         # @web-react-player/core (v1.0.2): FSM машина состояний и типы, без React и DOM
+│   ├── ui/           # @web-react-player/ui (v1.1.1): React-провайдер, headless-примитивы, раскладка, хоткеи
+│   └── remotion/     # @web-react-player/remotion (v0.2.1): TSX-компилятор, плагины, экспорт, виджеты
 ├── apps/
 │   ├── playground/       # Vite-песочница с 5 демо (порт 5173, private: true)
 │   └── vidora-mini/      # Фронтенд (порт 5174) + FastAPI/FFmpeg-бэкенд (порт 8355)

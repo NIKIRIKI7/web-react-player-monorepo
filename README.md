@@ -8,9 +8,9 @@
 
 | Пакет | Версия | Назначение |
 | :--- | :--- | :--- |
-| [`@web-react-player/core`](./packages/core) | `1.0.0` | Framework-agnostic конечный автомат состояний. Без зависимостей |
-| [`@web-react-player/ui`](./packages/ui) | `1.0.0` | React-провайдер, headless-примитивы, раскладка, горячие клавиши |
-| [`@web-react-player/remotion`](./packages/remotion) | `0.1.0` | Компиляция TSX в браузере, Remotion Player, экспорт MP4/WebM |
+| [`@web-react-player/core`](./packages/core) | `1.0.2` | Framework-agnostic конечный автомат состояний. Без зависимостей |
+| [`@web-react-player/ui`](./packages/ui) | `1.1.1` | React-провайдер, headless-примитивы, раскладка, горячие клавиши |
+| [`@web-react-player/remotion`](./packages/remotion) | `0.2.1` | Компиляция TSX в браузере, Remotion Player, экспорт MP4/WebM |
 
 ## Документация
 
