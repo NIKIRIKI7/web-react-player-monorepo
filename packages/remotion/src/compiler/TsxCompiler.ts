@@ -191,7 +191,7 @@ export class BrowserTsxCompiler implements ITsxCompiler {
     // NOSONAR: dynamic evaluation of compiled TSX scene is intentional.
     const sandboxFunction = new Function('require', 'exports', 'module', 'React', transpiledJs); // NOSONAR
     try {
-      sandboxFunction(virtualModuleResolver, exports, module, React);
+      sandboxFunction(virtualModuleResolver, exports, module, React); // NOSONAR
     } catch (err) {
       throw new RemotionCompilerError(
         'RuntimeError',

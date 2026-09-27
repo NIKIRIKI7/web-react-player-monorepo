@@ -8,7 +8,7 @@
     "dev:app": "pnpm --filter playground dev",
     "build": "pnpm --filter \"./packages/**\" build",
     "build:app": "pnpm --filter playground build",
-    "typecheck": "pnpm -r exec tsc --noEmit",
+    "typecheck": "pnpm build && pnpm -r exec tsc --noEmit",
     "clean": "pnpm -r exec node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
