@@ -188,7 +188,8 @@ export class BrowserTsxCompiler implements ITsxCompiler {
     const exports = module.exports;
 
     // Выполнение кода в изоляции
-    const sandboxFunction = new Function('require', 'exports', 'module', 'React', transpiledJs);
+    // NOSONAR: dynamic evaluation of compiled TSX scene is intentional.
+    const sandboxFunction = new Function('require', 'exports', 'module', 'React', transpiledJs); // NOSONAR
     try {
       sandboxFunction(virtualModuleResolver, exports, module, React);
     } catch (err) {

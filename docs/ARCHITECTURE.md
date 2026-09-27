@@ -1224,7 +1224,7 @@ cd apps/vidora-mini/backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8355
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8355
 
 # 3. Фронтенд (из корня репозитория)
 pnpm --filter vidora-tester dev     # http://localhost:5174

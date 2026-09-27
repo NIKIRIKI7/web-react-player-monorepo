@@ -235,9 +235,9 @@ interface ChapterHeading {
   startTime: number;
 }
 
-const FRONTMATTER_PATTERN = /^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
+const FRONTMATTER_PATTERN = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 const CHAPTER_PATTERN =
-  /^##\s+(?:\[([^\]]+)\]|(\d{1,3}:\d{2}(?::\d{2})?))\s*(?:[-|:]\s*)?(.+?)\s*$/;
+  /^##[ \t]+(?:\[([^\]\r\n]+)\]|(\d{1,3}:\d{2}(?::\d{2})?))[ \t]*(?:[-|:][ \t]*)?([^\r\n]+)$/;
 
 function parseFrontmatter(markdown: string): FrontmatterData {
   const match = markdown.match(FRONTMATTER_PATTERN);
