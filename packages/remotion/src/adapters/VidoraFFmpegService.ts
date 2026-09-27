@@ -302,7 +302,11 @@ export class VidoraFFmpegService {
    * ```
    */
   constructor(options: VidoraFFmpegServiceOptions = {}) {
-    this.apiUrl = (options.apiUrl ?? 'http://localhost:8355/api/v1/render').replace(/\/+$/, '');
+    let apiUrl = options.apiUrl ?? 'http://localhost:8355/api/v1/render';
+    while (apiUrl.endsWith('/')) {
+      apiUrl = apiUrl.slice(0, -1);
+    }
+    this.apiUrl = apiUrl;
     this.headers = new Headers(options.headers);
     this.headers.set('Content-Type', 'application/json');
     this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);

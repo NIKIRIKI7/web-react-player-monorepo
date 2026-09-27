@@ -1,8 +1,8 @@
 import asyncio
+import asyncio.subprocess
 import json
 import os
 import shlex
-import subprocess
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -49,7 +49,7 @@ class RenderRequest(BaseModel):
 
 
 render_jobs: dict[str, dict[str, Any]] = {}
-render_processes: dict[str, subprocess.Popen[str]] = {}
+render_processes: dict[str, asyncio.subprocess.Process] = {}
 
 
 def serialize_event(payload: dict[str, Any]) -> str:
@@ -95,7 +95,7 @@ async def download_sample_if_needed() -> None:
     raise RuntimeError("The sample video could not be downloaded")
 
 
-def get_video_duration(filepath: Path) -> float:
+async def get_video_duration(filepath: Path) -> float:
     command = [
         FFPROBE_BINARY,
         "-v",
@@ -107,16 +107,19 @@ def get_video_duration(filepath: Path) -> float:
         str(filepath),
     ]
 
+    process: asyncio.subprocess.Process | None = None
     try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            check=True,
-            text=True,
-            timeout=30,
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        duration = float(result.stdout.strip())
-    except (OSError, ValueError, subprocess.SubprocessError):
+        stdout, _ = await asyncio.wait_for(process.communicate(), timeout=30.0)
+        duration = float(stdout.decode().strip())
+    except (OSError, ValueError, asyncio.TimeoutError):
+        if process is not None and process.returncode is None:
+            process.kill()
+            await process.wait()
         return 10.0
 
     return duration if duration > 0 else 10.0
@@ -205,16 +208,16 @@ def resolve_config(
     )
 
 
-async def stop_process(process: subprocess.Popen[str] | None) -> None:
-    if process is None or process.poll() is not None:
+async def stop_process(process: asyncio.subprocess.Process | None) -> None:
+    if process is None or process.returncode is not None:
         return
 
     process.terminate()
     try:
-        await asyncio.to_thread(process.wait, 5)
-    except subprocess.TimeoutExpired:
+        await asyncio.wait_for(process.wait(), timeout=5.0)
+    except asyncio.TimeoutError:
         process.kill()
-        await asyncio.to_thread(process.wait)
+        await process.wait()
 
 
 @app.on_event("startup")
@@ -247,7 +250,7 @@ async def cancel_render(job_id: str) -> dict[str, str]:
 
     job["status"] = "cancelled"
     process = render_processes.get(job_id)
-    if process is not None and process.poll() is None:
+    if process is not None and process.returncode is None:
         process.terminate()
     return {"status": "cancelled"}
 
@@ -278,11 +281,11 @@ async def render_progress(
         job["config"] = serialize_config(config)
         output_file = MEDIA_DIR / f"{job_id}.mp4"
         output_file.unlink(missing_ok=True)
-        duration = get_video_duration(INPUT_VIDEO)
+        duration = await get_video_duration(INPUT_VIDEO)
         command = build_ffmpeg_command(config, output_file)
         print(f"[FFmpeg] Command: {shlex.join(command)}")
 
-        process: subprocess.Popen[str] | None = None
+        process: asyncio.subprocess.Process | None = None
         diagnostics: list[str] = []
 
         try:
@@ -294,13 +297,10 @@ async def render_progress(
             job["progress"] = 0
             yield serialize_event({"status": "processing", "progress": 0})
 
-            process = subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
             )
             render_processes[job_id] = process
             if process.stdout is None:
@@ -308,11 +308,11 @@ async def render_progress(
 
             last_progress = 0
             while True:
-                line = await asyncio.to_thread(process.stdout.readline)
-                if line == "":
+                line_bytes = await process.stdout.readline()
+                if not line_bytes:
                     break
 
-                normalized_line = line.strip()
+                normalized_line = line_bytes.decode("utf-8", errors="replace").strip()
                 if normalized_line and not normalized_line.startswith(
                     (
                         "bitrate=",
@@ -338,7 +338,7 @@ async def render_progress(
                         job["progress"] = progress
                         yield serialize_event({"status": "processing", "progress": progress})
 
-            return_code = await asyncio.to_thread(process.wait)
+            return_code = await process.wait()
             if job.get("status") == "cancelled":
                 output_file.unlink(missing_ok=True)
                 yield serialize_event({"status": "cancelled", "message": "Render cancelled"})
@@ -369,8 +369,6 @@ async def render_progress(
             if render_processes.get(job_id) is process:
                 render_processes.pop(job_id, None)
             await stop_process(process)
-            if process is not None and process.stdout is not None:
-                process.stdout.close()
 
     return StreamingResponse(
         event_generator(),
@@ -386,4 +384,6 @@ async def render_progress(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8355)
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "8355"))
+    uvicorn.run(app, host=host, port=port)

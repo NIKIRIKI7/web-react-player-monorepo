@@ -235,9 +235,8 @@ interface ChapterHeading {
   startTime: number;
 }
 
-const FRONTMATTER_PATTERN = /^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
-const CHAPTER_PATTERN =
-  /^##\s+(?:\[([^\]]+)\]|(\d{1,3}:\d{2}(?::\d{2})?))\s*(?:[-|:]\s*)?(.+?)\s*$/;
+const FRONTMATTER_PATTERN = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
+const CHAPTER_PATTERN = /^##[ \t]+(?:\[([^\]\r\n]+)\]|(\d{1,3}:\d{2}(?::\d{2})?))(.*)$/;
 
 function parseFrontmatter(markdown: string): FrontmatterData {
   const match = markdown.match(FRONTMATTER_PATTERN);
@@ -298,11 +297,16 @@ function parseChapterHeading(line: string): ChapterHeading | null {
   if (!match) return null;
 
   const timeRaw = match[1] ?? match[2];
-  const titleRaw = match[3];
-  if (!(timeRaw && titleRaw)) return null;
+  const rest = match[3];
+  if (!timeRaw || rest === undefined) return null;
 
   const startTime = parseTime(timeRaw);
-  const title = titleRaw.trim();
+
+  let title = rest.trim();
+  if (title.startsWith('-') || title.startsWith('|') || title.startsWith(':')) {
+    title = title.slice(1).trim();
+  }
+
   return startTime === null || title.length === 0 ? null : { title, startTime };
 }
 

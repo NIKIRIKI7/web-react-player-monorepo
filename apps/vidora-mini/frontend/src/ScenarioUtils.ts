@@ -10,7 +10,7 @@ export type WhisperXCue = CaptionCue & {
   words?: WhisperWord[];
 };
 
-const CHAPTER_PATTERN = /^##\s+\[(\d{2}:\d{2})\]\s+(.+)$/gm;
+const CHAPTER_PATTERN = /^##[ \t]+\[(\d{2}:\d{2})\][ \t]+(\S[^\r\n]*)$/gm;
 
 function timeToSeconds(value: string): number | null {
   const parts = value.split(':');

@@ -23,8 +23,24 @@ function getAllowedProtocols(protocols?: readonly string[]): Set<string> {
   ]);
 }
 
+function trimTrailingSlashes(str: string): string {
+  let end = str.length;
+  while (end > 0 && str.charCodeAt(end - 1) === 47 /* '/' */) {
+    end -= 1;
+  }
+  return str.slice(0, end);
+}
+
+function trimLeadingSlashes(str: string): string {
+  let start = 0;
+  while (start < str.length && str.charCodeAt(start) === 47 /* '/' */) {
+    start += 1;
+  }
+  return str.slice(start);
+}
+
 function joinAssetBaseUrl(baseUrl: string, assetPath: string): string {
-  return `${baseUrl.replace(/\/+$/, '')}/${assetPath.replace(/^\/+/, '')}`;
+  return `${trimTrailingSlashes(baseUrl)}/${trimLeadingSlashes(assetPath)}`;
 }
 
 /**
@@ -56,7 +72,7 @@ export function createAssetResolver(
       return assetPath;
     }
 
-    const cleanPath = assetPath.replace(/^\/+/, '');
+    const cleanPath = trimLeadingSlashes(assetPath);
     const cleanAsset = assets[cleanPath];
     if (cleanAsset !== undefined) return cleanAsset;
 

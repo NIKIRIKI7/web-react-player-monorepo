@@ -129,7 +129,7 @@ if ($LASTEXITCODE -ne 0) {
 try {
     $backendProcess = Start-Process `
         -FilePath $pythonExecutable `
-        -ArgumentList @('-m', 'uvicorn', 'main:app', '--reload', '--host', '0.0.0.0', '--port', "$backendPort") `
+        -ArgumentList @('-m', 'uvicorn', 'main:app', '--reload', '--host', '127.0.0.1', '--port', "$backendPort") `
         -WorkingDirectory $backendRoot `
         -NoNewWindow `
         -PassThru
