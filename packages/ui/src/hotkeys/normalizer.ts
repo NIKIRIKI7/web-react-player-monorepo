@@ -54,7 +54,7 @@ export function isKeyboardEventMatchingChord(event: KeyboardEvent, chord: Parsed
 // Context filter: hotkeys are suppressed while the focus is inside input-like
 // controls so the user can type without the player hijacking every keystroke.
 export function isEditableElement(target: EventTarget | null): boolean {
-  if (!target || !(target instanceof HTMLElement)) return false;
+  if (!(target && target instanceof HTMLElement)) return false;
   const tagName = target.tagName;
   return (
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(tagName) ||

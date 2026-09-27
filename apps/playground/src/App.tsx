@@ -15,30 +15,29 @@ import {
   Root,
 } from '@web-react-player/ui';
 import { useMemo, useState } from 'react';
+import { AudioMixerDemo } from './AudioMixerDemo';
+import { MixedScenarioDemo } from './MixedScenarioDemo';
+import { WidgetStudioDemo } from './WidgetStudioDemo';
 
 const SAMPLE_TSX_ANIMATION = `
 import React from 'react';
 import { useCurrentFrame, spring, useVideoConfig, AbsoluteFill, staticFile, Img } from 'remotion';
 import { Audio } from '@remotion/media'; // ИМПОРТ ИЗ @remotion/media ДЛЯ ЭКСПОРТА АУДИО
 import { Sparkles, Music, HardDriveDownload } from 'lucide-react';
-
 export const config = {
   durationInFrames: 240,
   fps: 30,
   width: 1280,
   height: 720,
 };
-
 export const DynamicScene = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
   const scale = spring({
     frame,
     fps,
     config: { damping: 14 },
   });
-
   return (
     <AbsoluteFill className="bg-slate-950 flex flex-col items-center justify-center text-white">
       {/*
@@ -47,7 +46,6 @@ export const DynamicScene = () => {
         Ему не нужны crossOrigin, autoPlay или loop — он всё делает под капотом сам.
       */}
       <Audio src={staticFile('bg-music.mp3')} />
-
       <div 
         className="flex flex-col items-center gap-6 px-10 py-8 rounded-[2rem] bg-indigo-900/20 border border-indigo-500/30 shadow-2xl backdrop-blur-xl"
         style={{ transform: \`scale(\${scale})\` }}
@@ -58,14 +56,12 @@ export const DynamicScene = () => {
           alt="Logo"
           className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.8)]"
         />
-
         <div className="flex items-center gap-3">
           <Sparkles className="text-amber-400 animate-pulse" size={32} />
           <span className="text-4xl font-black tracking-tight bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
             VFS & Audio Export
           </span>
         </div>
-
         <div className="flex gap-4 mt-2">
           <span className="px-4 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-sm font-mono flex items-center gap-2 text-indigo-300">
             <Music size={16} /> audio.mp3
@@ -75,7 +71,6 @@ export const DynamicScene = () => {
           </span>
         </div>
       </div>
-
       <p className="absolute bottom-8 text-sm text-slate-500 font-mono">
         Конфиг и ассеты подхватываются автоматически. Аудио попадёт в MP4!
       </p>
@@ -89,7 +84,6 @@ const RemotionDemo = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportQuality, setExportQuality] = useState<ExportOptions['quality']>('standard');
-
   const remotionSource = useMemo<Extract<RemotionSource, { type: 'code' }>>(
     () => ({
       type: 'code',
@@ -114,7 +108,6 @@ const RemotionDemo = () => {
         remotionSource.code,
         remotionSource.assets,
       );
-
       const finalConfig: RemotionCompositionConfig = {
         durationInFrames: 150,
         fps: 30,
@@ -122,7 +115,6 @@ const RemotionDemo = () => {
         height: 720,
         ...detectedConfig,
       };
-
       const result = await suite.exporter.exportMedia(
         Component,
         finalConfig,
@@ -135,7 +127,6 @@ const RemotionDemo = () => {
           },
         },
       );
-
       result.download(`remotion-video-${exportQuality}.mp4`);
     } catch (err) {
       alert(`Export failed: ${(err as Error).message}`);
@@ -153,7 +144,6 @@ const RemotionDemo = () => {
           в MP4!
         </p>
       </div>
-
       <PlayerProvider>
         <div
           style={{
@@ -175,7 +165,6 @@ const RemotionDemo = () => {
           </Root>
         </div>
       </PlayerProvider>
-
       <div
         style={{
           marginTop: 24,
@@ -218,7 +207,6 @@ const RemotionDemo = () => {
             <option value="high">Высокое (High) — Макс. качество, 15 Mbps</option>
           </select>
         </div>
-
         <button
           type="button"
           onClick={handleExport}
@@ -244,7 +232,6 @@ const RemotionDemo = () => {
 
 const HTML5_VIDEO_SRC =
   'https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4';
-
 const CHAPTERS: Chapter[] = [
   { title: 'Intro', startTime: 0, endTime: 33 },
   { title: 'Bunny Wakes Up', startTime: 33, endTime: 156 },
@@ -252,12 +239,10 @@ const CHAPTERS: Chapter[] = [
   { title: 'Evil Squirrels', startTime: 200, endTime: 330 },
   { title: 'Revenge', startTime: 330, endTime: 596 },
 ];
-
 const MARKERS: Marker[] = [
   { type: 'intro', startTime: 0, endTime: 33, label: 'Intro' },
   { type: 'highlight', startTime: 156, endTime: 170, label: 'Butterfly' },
 ];
-
 const CAPTIONS: CaptionCue[] = [
   { startTime: 2, endTime: 6, text: 'The Blender Foundation presents...' },
   { startTime: 7, endTime: 11, text: 'Big Buck Bunny' },
@@ -302,8 +287,29 @@ const Html5Demo = () => {
   );
 };
 
+const TABS = [
+  { id: 'widgets', label: 'Widget Studio (JSON)' },
+  { id: 'hybrid', label: 'Hybrid JSON+TSX' },
+  { id: 'audio-mixer', label: 'Audio Mixer Test' },
+  { id: 'remotion', label: 'Remotion Engine' },
+  { id: 'html5', label: 'HTML5 Native' },
+] as const;
+
+type TabId = (typeof TABS)[number]['id'];
+
+const tabButtonStyle = (active: boolean): React.CSSProperties => ({
+  background: active ? '#4f46e5' : 'transparent',
+  color: active ? '#fff' : '#94a3b8',
+  border: `1px solid ${active ? '#4f46e5' : '#334155'}`,
+  padding: '8px 16px',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontWeight: 600,
+  transition: 'all 0.2s',
+});
+
 export const App = () => {
-  const [activeTab, setActiveTab] = useState<'html5' | 'remotion'>('html5');
+  const [activeTab, setActiveTab] = useState<TabId>('widgets');
 
   return (
     <div style={{ paddingBottom: '60px' }}>
@@ -315,50 +321,30 @@ export const App = () => {
           background: '#0f172a',
           borderBottom: '1px solid #1e293b',
           alignItems: 'center',
+          flexWrap: 'wrap',
         }}
       >
         <span style={{ fontWeight: 700, fontSize: '18px', marginRight: '24px', color: '#f8fafc' }}>
           Playground
         </span>
-        <button
-          type="button"
-          aria-pressed={activeTab === 'html5'}
-          onClick={() => setActiveTab('html5')}
-          style={{
-            background: activeTab === 'html5' ? '#4f46e5' : 'transparent',
-            color: activeTab === 'html5' ? '#fff' : '#94a3b8',
-            border: activeTab === 'html5' ? '1px solid #4f46e5' : '1px solid #334155',
-            padding: '8px 16px',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontWeight: 600,
-            transition: 'all 0.2s',
-          }}
-        >
-          HTML5 Native
-        </button>
-        <button
-          type="button"
-          aria-pressed={activeTab === 'remotion'}
-          onClick={() => setActiveTab('remotion')}
-          style={{
-            background: activeTab === 'remotion' ? '#4f46e5' : 'transparent',
-            color: activeTab === 'remotion' ? '#fff' : '#94a3b8',
-            border: activeTab === 'remotion' ? '1px solid #4f46e5' : '1px solid #334155',
-            padding: '8px 16px',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontWeight: 600,
-            transition: 'all 0.2s',
-          }}
-        >
-          Remotion Engine
-        </button>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            aria-pressed={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={tabButtonStyle(activeTab === tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </nav>
-
       <main style={{ padding: '0 24px' }}>
-        {activeTab === 'html5' && <Html5Demo />}
+        {activeTab === 'widgets' && <WidgetStudioDemo />}
+        {activeTab === 'hybrid' && <MixedScenarioDemo />}
+        {activeTab === 'audio-mixer' && <AudioMixerDemo />}
         {activeTab === 'remotion' && <RemotionDemo />}
+        {activeTab === 'html5' && <Html5Demo />}
       </main>
     </div>
   );

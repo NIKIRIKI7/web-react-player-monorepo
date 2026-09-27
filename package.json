@@ -23,6 +23,7 @@
     "repomix:core": "repomix packages/core -o repomix-core.xml",
     "repomix:ui": "repomix packages/ui -o repomix-ui.xml",
     "repomix:app": "repomix apps/playground -o repomix-playground.xml",
+    "repomix:vidora-mini": "repomix --config .repomix/repomix.vidora-mini.json",
     "check:knip": "knip",
     "check:syncpack": "syncpack lint --dependency-types prod,dev,peer",
     "fix:syncpack": "syncpack fix --dependency-types prod,dev,peer",

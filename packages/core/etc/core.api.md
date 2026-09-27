@@ -14,6 +14,8 @@ export interface CaptionCue {
     startTime: number;
     // (undocumented)
     text: string;
+    // (undocumented)
+    words?: WordCue[];
 }
 
 // @public (undocumented)
@@ -262,6 +264,16 @@ export interface VideoQuality {
     src?: string;
     // (undocumented)
     width?: number;
+}
+
+// @public (undocumented)
+export interface WordCue {
+    // (undocumented)
+    end: number;
+    // (undocumented)
+    start: number;
+    // (undocumented)
+    word: string;
 }
 
 // (No @packageDocumentation comment for this package)

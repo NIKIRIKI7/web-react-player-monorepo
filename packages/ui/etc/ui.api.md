@@ -9,6 +9,7 @@ import { Chapter } from '@web-react-player/core';
 import { ComponentProps } from 'react';
 import { CSSProperties } from 'react';
 import { ForwardRefExoticComponent } from 'react';
+import { HTMLAttributes } from 'react';
 import { JSX } from 'react';
 import { Marker } from '@web-react-player/core';
 import { PlayerActionRecord } from '@web-react-player/core';
@@ -19,10 +20,9 @@ import { PlayerSnapshot } from '@web-react-player/core';
 import { PlayerStatus } from '@web-react-player/core';
 import { ReactNode } from 'react';
 import { ReactPortal } from 'react';
-import { Ref } from 'react';
 import { RefAttributes } from 'react';
-import { SyntheticEvent } from 'react';
 import { VideoQuality } from '@web-react-player/core';
+import { WordCue } from '@web-react-player/core';
 
 // @public (undocumented)
 export function ActionBezel(input: ActionBezelProps): JSX.Element | null;
@@ -72,6 +72,12 @@ export function Captions(input: CaptionsProps): JSX.Element | null;
 
 // @public (undocumented)
 export interface CaptionsProps extends ComponentProps<'section'> {
+    // (undocumented)
+    activeWordColor?: string;
+    // (undocumented)
+    passedWordOpacity?: number;
+    // (undocumented)
+    wordTransition?: string;
 }
 
 // @public (undocumented)
@@ -374,22 +380,14 @@ export interface SettingsMenuProps extends ComponentProps<'div'> {
 }
 
 // @public (undocumented)
-export const Slot: ForwardRefExoticComponent<Omit<SlotProps, "ref"> & RefAttributes<unknown>>;
+export const Slot: ForwardRefExoticComponent<SlotProps & RefAttributes<HTMLElement>>;
 
 // @public (undocumented)
-export interface SlotProps extends Record<string, unknown> {
+export interface SlotProps extends HTMLAttributes<HTMLElement> {
     // (undocumented)
     children?: ReactNode;
     // (undocumented)
-    className?: string;
-    // (undocumented)
-    onClick?: (event: SyntheticEvent) => void;
-    // (undocumented)
-    onPointerDown?: (event: SyntheticEvent) => void;
-    // (undocumented)
-    ref?: Ref<unknown>;
-    // (undocumented)
-    style?: CSSProperties;
+    type?: string | undefined;
 }
 
 // @public (undocumented)
@@ -435,6 +433,8 @@ export function VolumeControl(input: VolumeControlProps): JSX.Element;
 // @public (undocumented)
 export interface VolumeControlProps extends ComponentProps<'fieldset'> {
 }
+
+export { WordCue }
 
 // (No @packageDocumentation comment for this package)
 

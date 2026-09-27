@@ -65,7 +65,6 @@ export function DocumentPipPortal({ children, width = 720, height = 405 }: Docum
     const api = getDocumentPipApi();
     if (!api) {
       // Unsupported browser: reset the flag so the UI is not stuck in "on".
-      console.warn('[web-react-player] Document Picture-in-Picture is not supported here.');
       actions.triggerAction('document_pip_error');
       send({ type: 'DOCUMENT_PIP_CHANGE', documentPip: false });
       return;
@@ -89,9 +88,8 @@ export function DocumentPipPortal({ children, width = 720, height = 405 }: Docum
         });
         setPipWindow(pipWin);
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (cancelled) return;
-        console.warn('[web-react-player] failed to open Document PiP:', err);
         actions.triggerAction('document_pip_error');
         send({ type: 'DOCUMENT_PIP_CHANGE', documentPip: false });
       });
@@ -104,7 +102,7 @@ export function DocumentPipPortal({ children, width = 720, height = 405 }: Docum
   }, [actions, height, isActive, send, width]);
 
   // Not (yet) in PiP: render the player normally in the main window.
-  if (!isActive || !pipWindow) {
+  if (!(isActive && pipWindow)) {
     return <>{children}</>;
   }
 

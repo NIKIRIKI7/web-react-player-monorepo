@@ -27,7 +27,7 @@ export function AmbientBackground({
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    if (!canvas || !video || isSmall || !ambient) return;
+    if (!(canvas && video) || isSmall || !ambient) return;
     const context = canvas.getContext('2d', { alpha: false });
     if (!context) return;
 
@@ -39,7 +39,7 @@ export function AmbientBackground({
     const drawFrame = () => {
       const cssWidth = canvas.clientWidth;
       const cssHeight = canvas.clientHeight;
-      if (!cssWidth || !cssHeight) return;
+      if (!(cssWidth && cssHeight)) return;
       const scale =
         Math.max(cssWidth, cssHeight) > maxDim ? maxDim / Math.max(cssWidth, cssHeight) : 1;
       const cw = Math.max(1, Math.round(cssWidth * scale));
@@ -51,7 +51,7 @@ export function AmbientBackground({
 
       const vw = video.videoWidth;
       const vh = video.videoHeight;
-      if (!vw || !vh) return;
+      if (!(vw && vh)) return;
 
       // "object-fit: cover" source rect: crop the video to the canvas aspect so
       // the browser's letterbox bars stay out of the captured frame.

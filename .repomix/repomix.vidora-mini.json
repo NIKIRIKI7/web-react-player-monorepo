@@ -1,0 +1,43 @@
+{
+  "$schema": "https://repomix.com/schemas/repomix-config-schema.json",
+  "instructionFilePath": ".repomix/instructions.md",
+  "output": {
+    "filePath": "repomix-vidora-mini.xml",
+    "style": "xml",
+    "parsableStyle": true,
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "showLineNumbers": true,
+    "topFilesLength": 10
+  },
+  "include": [
+    "apps/vidora-mini/**/*",
+    "packages/core/src/**/*",
+    "packages/ui/src/**/*",
+    "packages/remotion/src/**/*",
+    "tsconfig.base.json",
+    "pnpm-workspace.yaml",
+    "package.json"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/dist/**",
+      "**/node_modules/**",
+      "pnpm-lock.yaml",
+      ".husky/**",
+      ".changeset/**",
+      "repomix-*.xml",
+      "repomix-output.*",
+      "docs/**",
+      "**/*.api.md",
+      "**/*.mp4",
+      "**/*.webm",
+      "**/*.mp3",
+      "**/*.svg",
+      "**/*.png",
+      "**/*.jpg"
+    ]
+  }
+}

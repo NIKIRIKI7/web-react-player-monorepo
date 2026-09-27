@@ -1,3 +1,4 @@
 packages:
   - 'packages/*'
   - 'apps/*' # на будущее для песочницы/документации
+  - 'apps/vidora-mini/frontend'

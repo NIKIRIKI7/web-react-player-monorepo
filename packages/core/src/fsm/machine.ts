@@ -47,8 +47,7 @@ const INITIAL_CONTEXT: PlayerContext = {
 };
 
 function findActiveChapter(chapters: Chapter[], time: number): Chapter | null {
-  for (let i = 0; i < chapters.length; i++) {
-    const chapter = chapters[i];
+  for (const chapter of chapters) {
     if (time >= chapter.startTime && time < chapter.endTime) {
       return chapter;
     }
@@ -57,8 +56,7 @@ function findActiveChapter(chapters: Chapter[], time: number): Chapter | null {
 }
 
 function findActiveCue(cues: CaptionCue[], time: number): CaptionCue | null {
-  for (let i = 0; i < cues.length; i++) {
-    const cue = cues[i];
+  for (const cue of cues) {
     if (time >= cue.startTime && time <= cue.endTime) {
       return cue;
     }
@@ -67,8 +65,7 @@ function findActiveCue(cues: CaptionCue[], time: number): CaptionCue | null {
 }
 
 function findActiveMarker(markers: Marker[], time: number): Marker | null {
-  for (let i = 0; i < markers.length; i++) {
-    const marker = markers[i];
+  for (const marker of markers) {
     if (time >= marker.startTime && time < marker.endTime) {
       return marker;
     }
@@ -119,7 +116,9 @@ export class PlayerMachine {
   private runMiddleware = (event: PlayerEvent, index: number): void => {
     if (index < this.middlewares.length) {
       const middleware = this.middlewares[index];
-      middleware(event, this.snapshot, (nextEvent) => this.runMiddleware(nextEvent, index + 1));
+      if (middleware) {
+        middleware(event, this.snapshot, (nextEvent) => this.runMiddleware(nextEvent, index + 1));
+      }
       return;
     }
     this.processEvent(event);
@@ -315,7 +314,7 @@ export class PlayerMachine {
       prevContext.currentQuality !== nextContext.currentQuality ||
       prevContext.autoQuality !== nextContext.autoQuality;
 
-    if (!hasStatusChanged && !hasContextChanged) {
+    if (!(hasStatusChanged || hasContextChanged)) {
       return;
     }
 

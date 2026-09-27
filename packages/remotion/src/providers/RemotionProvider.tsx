@@ -1,6 +1,6 @@
 import { usePlayerContext } from '@web-react-player/ui';
 import type React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { RemotionPlaybackAdapter } from '../adapter/RemotionPlaybackAdapter';
 import type { RemotionPluginManager } from '../plugins/PluginManager';
 import type { ITsxCompiler, RemotionCompositionConfig, RemotionSource } from '../types';
@@ -26,20 +26,38 @@ export function RemotionProvider({
   className,
 }: RemotionProviderProps) {
   const { state, send } = usePlayerContext();
+  const lastLoadKeyRef = useRef<string | null>(null);
 
   // On mount, tell the FSM which source is being loaded. The adapter itself is
   // responsible for compiling the source and emitting METADATA_LOADED + CAN_PLAY.
   useEffect(() => {
+    const loadKey =
+      source.type === 'component'
+        ? 'component'
+        : source.type === 'code'
+          ? `code:${source.code}`
+          : `widget:${typeof source.widget === 'string' ? source.widget : source.widget.id}`;
+
+    // Пропсы виджета меняются на каждом движении слайдера инспектора, поэтому
+    // LOAD отправляем только при смене самого источника, иначе плеер каждый
+    // раз сбрасывал бы текущее время и длительность.
+    if (lastLoadKeyRef.current === loadKey) return;
+    lastLoadKeyRef.current = loadKey;
+
     send({
       type: 'LOAD',
-      src: source.type === 'code' ? 'remotion://code' : 'remotion://component',
+      src:
+        source.type === 'code'
+          ? 'remotion://code'
+          : source.type === 'widget'
+            ? 'remotion://widget'
+            : 'remotion://component',
     });
   }, [source, send]);
 
   return (
     <RemotionPlaybackAdapter
       source={source}
-      defaultConfig={config}
       pluginManager={pluginManager}
       compiler={compiler}
       fsmStatus={state.status}
@@ -54,8 +72,9 @@ export function RemotionProvider({
       }}
       onPlaybackStateChange={(isPlaying) => send({ type: isPlaying ? 'PLAYING' : 'PAUSE' })}
       onError={(error) => send({ type: 'ERROR', error })}
-      style={style}
-      className={className}
+      {...(config !== undefined ? { defaultConfig: config } : {})}
+      {...(style !== undefined ? { style } : {})}
+      {...(className !== undefined ? { className } : {})}
     />
   );
 }

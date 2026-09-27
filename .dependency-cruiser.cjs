@@ -4,32 +4,41 @@ module.exports = {
     {
       name: 'no-circular',
       severity: 'error',
-      comment: 'Запрещены любые циклические зависимости в проекте',
+      comment:
+        'Циклические зависимости запрещены. Они ломают бандлеры и усложняют инициализацию модулей.',
       from: {},
       to: { circular: true },
     },
     {
-      name: 'core-must-not-depend-on-ui',
+      name: 'core-is-independent',
       severity: 'error',
-      comment: 'Core пакет не может импортировать UI пакет',
-      from: { path: '^packages/core' },
-      to: { path: '^packages/ui' },
+      comment: '@web-react-player/core - это стейт-машина. Она не должна зависеть от UI или React!',
+      from: { path: '^packages/core/src' },
+      to: { path: '^packages/(ui|remotion)/src' },
     },
     {
-      name: 'core-must-not-depend-on-react',
+      name: 'ui-independent-of-remotion',
       severity: 'error',
-      comment: 'Core пакет должен быть framework-agnostic и не знать о React',
-      from: { path: '^packages/core' },
-      to: { path: 'react|react-dom' },
+      comment:
+        '@web-react-player/ui не должен зависеть от @remotion (он работает и с обычным <video>).',
+      from: { path: '^packages/ui/src' },
+      to: { path: '^packages/remotion/src' },
+    },
+    {
+      name: 'packages-independent-of-apps',
+      severity: 'error',
+      comment: 'Пакеты никогда не должны импортировать код из приложений (apps/...).',
+      from: { path: '^packages/' },
+      to: { path: '^apps/' },
     },
   ],
   options: {
-    doNotFollow: {
-      path: 'node_modules',
-    },
+    doNotFollow: { path: 'node_modules' },
     tsPreCompilationDeps: true,
-    tsConfig: {
-      fileName: 'tsconfig.base.json',
+    tsConfig: { fileName: 'tsconfig.base.json' },
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'require', 'node', 'default'],
     },
   },
 };

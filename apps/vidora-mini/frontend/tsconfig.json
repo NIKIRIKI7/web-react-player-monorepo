@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "paths": {
+      "@web-react-player/core": ["../../../packages/core/src/index.ts"],
+      "@web-react-player/ui": ["../../../packages/ui/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

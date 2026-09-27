@@ -1,11 +1,10 @@
 import type React from 'react';
+import type { RemotionAssetResolver, RemotionCompositionConfig } from './compositionConfig';
+import type { VidoraWidgetDefinition } from './widgets/types';
+import type { WidgetRegistry } from './widgets/WidgetRegistry';
 
-export interface RemotionCompositionConfig {
-  durationInFrames: number;
-  fps: number;
-  width: number;
-  height: number;
-}
+export * from './compositionConfig';
+export * from './widgets/types';
 
 export type RemotionSource =
   | {
@@ -17,9 +16,19 @@ export type RemotionSource =
   | {
       type: 'code';
       code: string;
-      // Виртуальная файловая система: ключ — имя файла в коде, значение — Blob URL или прямая ссылка
       assets?: Record<string, string>;
+      assetBaseUrl?: string;
+      allowedAssetProtocols?: readonly string[];
+      assetResolver?: RemotionAssetResolver;
+      virtualModules?: Record<string, unknown>;
       inputProps?: Record<string, unknown>;
+      config?: Partial<RemotionCompositionConfig>;
+    }
+  | {
+      type: 'widget';
+      widget: string | VidoraWidgetDefinition;
+      widgetProps?: Record<string, unknown>;
+      registry: WidgetRegistry;
       config?: Partial<RemotionCompositionConfig>;
     };
 
@@ -30,7 +39,7 @@ export interface PluginPreflightContext {
 }
 
 export interface ExportProgressData {
-  progress: number; // 0 to 1
+  progress: number;
   renderedFrames: number;
   totalFrames: number;
   encodedFrames: number;
@@ -41,14 +50,9 @@ export interface ExportOptions {
   videoCodec?: 'h264' | 'vp8' | 'vp9';
   audioCodec?: string;
   fileName?: string;
-
-  // Удобный пресет качества
   quality?: 'draft' | 'standard' | 'high';
-
-  // Явные переопределения (для профи)
-  videoBitrate?: number; // в битах в секунду (bps)
-  audioBitrate?: number; // в битах в секунду (bps)
-
+  videoBitrate?: number;
+  audioBitrate?: number;
   onProgress?: (progress: ExportProgressData) => void;
 }
 
@@ -76,18 +80,7 @@ export interface IRemotionPlugin {
 
 export interface CompilerError extends Error {
   type: 'SyntaxError' | 'MissingComponentError' | 'InvalidConfigError' | 'RuntimeError';
-  suggestion?: string;
-}
-
-export interface ITsxCompiler {
-  compile(
-    code: string,
-    assets?: Record<string, string>,
-    virtualScope?: Record<string, unknown>,
-  ): Promise<{
-    Component: React.ComponentType<Record<string, unknown>>;
-    detectedConfig?: Partial<RemotionCompositionConfig>;
-  }>;
+  suggestion?: string | undefined;
 }
 
 export interface IExportEngine {

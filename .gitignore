@@ -12,6 +12,11 @@ packages/*/temp/
 
 # Generated repomix output
 *.xml
+apps/vidora-mini/backend/media/
+
+# Python bytecode
+__pycache__/
+*.pyc
 
 # Generated typedoc API docs
 docs/api/

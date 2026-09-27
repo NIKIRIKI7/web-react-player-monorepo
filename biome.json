@@ -18,9 +18,47 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noConsole": "error"
+      },
+      "complexity": {
+        "noUselessFragments": "error",
+        "useSimplifiedLogicExpression": "error"
+      },
+      "style": {
+        "useNodejsImportProtocol": "error",
+        "useConst": "error"
+      }
     }
   },
+  "overrides": [
+    {
+      "includes": ["apps/vidora-mini/frontend/src/styles.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnknownAtRules": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "single",

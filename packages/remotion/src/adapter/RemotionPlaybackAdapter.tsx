@@ -1,12 +1,15 @@
 import type { PlayerRef } from '@remotion/player';
 import { Player } from '@remotion/player';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createAssetResolver, resolveAudioMixAssets } from '../compiler/assetResolver';
+import type { RemotionCompilerOptions } from '../compositionConfig';
 import type { RemotionPluginManager } from '../plugins/PluginManager';
 import type {
   CompilerError,
   ITsxCompiler,
   RemotionCompositionConfig,
   RemotionSource,
+  VidoraWidgetDefinition,
 } from '../types';
 
 export interface RemotionPlaybackAdapterProps {
@@ -22,9 +25,9 @@ export interface RemotionPlaybackAdapterProps {
   onMetadataLoaded: (duration: number, fps: number) => void;
   onPlaybackStateChange: (isPlaying: boolean) => void;
   onError: (error: Error) => void;
-  defaultConfig?: RemotionCompositionConfig;
-  style?: React.CSSProperties;
-  className?: string;
+  defaultConfig?: RemotionCompositionConfig | undefined;
+  style?: React.CSSProperties | undefined;
+  className?: string | undefined;
 }
 
 const DEFAULT_CONFIG: RemotionCompositionConfig = {
@@ -46,10 +49,10 @@ class AdapterErrorBoundary extends React.Component<
   static getDerivedStateFromError() {
     return { hasError: true };
   }
-  componentDidCatch(error: Error) {
+  override componentDidCatch(error: Error) {
     this.props.onError(error);
   }
-  render() {
+  override render() {
     if (this.state.hasError) return null;
     return this.props.children;
   }
@@ -84,6 +87,27 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
 
   const isInternalSeeking = useRef(false);
 
+  // --- Поддержка source.type = 'widget' ---
+  // Виджет компилируется один раз (кэш в WidgetRegistry), а пропсы приходят
+  // обычным объектом: правка инспектора не должна перезапускать компиляцию.
+  const widgetDefinition = useMemo<VidoraWidgetDefinition | null>(() => {
+    if (source.type !== 'widget') return null;
+    return typeof source.widget === 'string'
+      ? (source.registry.get(source.widget) ?? null)
+      : source.widget;
+  }, [source]);
+
+  const playerInputProps = useMemo<Record<string, unknown>>(() => {
+    if (source.type !== 'widget') return source.inputProps ?? {};
+    if (!widgetDefinition) return {};
+    return source.registry.normalizeProps(widgetDefinition, source.widgetProps ?? {});
+  }, [source, widgetDefinition]);
+
+  // Ключ того, что именно нужно скомпилировать. Смена пропсов его не меняет.
+  const lastCompileKeyRef = useRef<string | null>(null);
+  const lastComponentRef = useRef<React.ComponentType<Record<string, unknown>> | null>(null);
+  const lastDefaultConfigRef = useRef<RemotionCompositionConfig | undefined>(defaultConfig);
+
   // Стабильные ссылки
   const onMetadataLoadedRef = useRef(onMetadataLoaded);
   onMetadataLoadedRef.current = onMetadataLoaded;
@@ -96,6 +120,21 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
 
   // 1. Компиляция и рефлексия
   useEffect(() => {
+    // Быстрый выход: изменились только пропсы виджета, а не сам код
+    const compileKey =
+      source.type === 'component'
+        ? 'component'
+        : source.type === 'widget'
+          ? `widget:${widgetDefinition?.id ?? ''}:${widgetDefinition?.tsx_code ?? ''}`
+          : `code:${source.code}`;
+
+    const isUnchanged =
+      source.type === 'component'
+        ? lastComponentRef.current === source.component
+        : lastCompileKeyRef.current === compileKey;
+
+    if (isUnchanged && lastDefaultConfigRef.current === defaultConfig) return;
+
     let isCancelled = false;
     const resolveSource = async () => {
       setIsCompiling(true);
@@ -103,39 +142,99 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
       setRuntimeError(null); // Сбрасываем старые ошибки при новом коде
 
       try {
+        let component: React.ComponentType<Record<string, unknown>>;
+        let mergedConfig: RemotionCompositionConfig;
+
         if (source.type === 'component') {
-          const mergedConfig: RemotionCompositionConfig = {
+          component = source.component;
+          mergedConfig = {
             ...defaultConfig,
             ...source.config,
           };
-          if (isCancelled) return;
-          setActiveConfig(mergedConfig);
-          setResolvedComponent(() => source.component);
-          onMetadataLoadedRef.current(
-            mergedConfig.durationInFrames / mergedConfig.fps,
-            mergedConfig.fps,
-          );
+        } else if (source.type === 'widget') {
+          if (!widgetDefinition) {
+            throw new Error(
+              `[RemotionPlaybackAdapter] Виджет "${
+                typeof source.widget === 'string' ? source.widget : 'unknown'
+              }" не найден в реестре.`,
+            );
+          }
+
+          // Компонент берётся из кэша реестра (0 мс после первого вызова)
+          component = await source.registry.compile(widgetDefinition);
+          mergedConfig = {
+            ...defaultConfig,
+            // Разрешение и длительность композиции выводим из ID/тегов виджета
+            ...source.registry.getWidgetConfig(widgetDefinition, source.widgetProps ?? {}),
+            ...source.config,
+          };
         } else {
-          // Вызываем компилятор, прокидываем VFS (assets)
-          const { Component, detectedConfig } = await compiler.compile(
+          // Вызываем компилятор, прокидываем VFS (assets).
+          // Ключи с undefined не передаём: exactOptionalPropertyTypes запрещает
+          // явный undefined в опциональных полях.
+          const compilerOptions: RemotionCompilerOptions = {
+            ...(source.assetBaseUrl !== undefined ? { assetBaseUrl: source.assetBaseUrl } : {}),
+            ...(source.allowedAssetProtocols !== undefined
+              ? { allowedAssetProtocols: source.allowedAssetProtocols }
+              : {}),
+            ...(source.assetResolver !== undefined ? { assetResolver: source.assetResolver } : {}),
+            ...(source.virtualModules !== undefined
+              ? { virtualModules: source.virtualModules }
+              : {}),
+          };
+          const compiled = await compiler.compile(
             source.code,
             source.assets || {},
+            {},
+            compilerOptions,
           );
 
-          if (isCancelled) return;
-          const mergedConfig: RemotionCompositionConfig = {
+          component = compiled.Component;
+          mergedConfig = {
             ...defaultConfig,
-            ...detectedConfig,
+            ...compiled.detectedConfig,
             ...source.config,
           };
-
-          setActiveConfig(mergedConfig);
-          setResolvedComponent(() => Component);
-          onMetadataLoadedRef.current(
-            mergedConfig.durationInFrames / mergedConfig.fps,
-            mergedConfig.fps,
-          );
         }
+
+        // audioMix может прийти из source.config / defaultConfig, минуя компилятор,
+        // поэтому относительные пути разрешаем на финальном конфиге. Операция
+        // идемпотентна: уже готовые URL (blob:, https:) остаются как есть.
+        const finalConfig: RemotionCompositionConfig = mergedConfig.audioMix
+          ? {
+              ...mergedConfig,
+              audioMix: resolveAudioMixAssets(
+                mergedConfig.audioMix,
+                createAssetResolver(
+                  source.type === 'code' ? source.assets || {} : {},
+                  source.type === 'code'
+                    ? {
+                        ...(source.assetBaseUrl !== undefined
+                          ? { assetBaseUrl: source.assetBaseUrl }
+                          : {}),
+                        ...(source.allowedAssetProtocols !== undefined
+                          ? { allowedAssetProtocols: source.allowedAssetProtocols }
+                          : {}),
+                        ...(source.assetResolver !== undefined
+                          ? { assetResolver: source.assetResolver }
+                          : {}),
+                      }
+                    : {},
+                ),
+              ),
+            }
+          : mergedConfig;
+
+        if (isCancelled) return;
+        setActiveConfig(finalConfig);
+        setResolvedComponent(() => component);
+        lastCompileKeyRef.current = compileKey;
+        lastComponentRef.current = source.type === 'component' ? source.component : null;
+        lastDefaultConfigRef.current = defaultConfig;
+        onMetadataLoadedRef.current(
+          finalConfig.durationInFrames / finalConfig.fps,
+          finalConfig.fps,
+        );
       } catch (err) {
         if (!isCancelled) {
           const errorObj = err instanceof Error ? err : new Error(String(err));
@@ -152,7 +251,7 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
     return () => {
       isCancelled = true;
     };
-  }, [source, compiler, defaultConfig]);
+  }, [source, widgetDefinition, compiler, defaultConfig]);
 
   // 2. Оборачивание в плагины
   const FinalRenderComponent = useMemo(() => {
@@ -342,7 +441,7 @@ export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = (
           ref={playerRef}
           acknowledgeRemotionLicense
           component={FinalRenderComponent}
-          inputProps={source.inputProps ?? {}}
+          inputProps={playerInputProps}
           durationInFrames={activeConfig.durationInFrames}
           compositionWidth={activeConfig.width}
           compositionHeight={activeConfig.height}

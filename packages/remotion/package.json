@@ -42,6 +42,7 @@
     "@remotion/media": "^4.0.527",
     "@remotion/player": "^4.0.526",
     "@remotion/web-renderer": "^4.0.526",
+    "@web-react-player/core": "workspace:*",
     "@web-react-player/ui": "workspace:*",
     "lucide-react": "^1.47.0",
     "remotion": "^4.0.526",

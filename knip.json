@@ -13,6 +13,10 @@
     },
     "apps/playground": {
       "ignoreDependencies": []
+    },
+    "apps/vidora-mini/frontend": {
+      "ignore": ["postcss.config.cjs"],
+      "ignoreDependencies": ["tailwindcss"]
     }
   }
 }

@@ -129,13 +129,6 @@ export function PlayerProvider({
     if (initialCaptions) inst.send({ type: 'SET_CAPTIONS', captions: initialCaptions });
     if (initialMarkers) inst.send({ type: 'SET_MARKERS', markers: initialMarkers });
     if (initialQualities) inst.send({ type: 'SET_QUALITIES', qualities: initialQualities });
-    // Middleware plugin example: surface engine-level errors in the console.
-    inst.use((event, _snapshot, next) => {
-      if (event.type === 'ERROR') {
-        console.error('[web-react-player] media error:', event.error);
-      }
-      next(event);
-    });
     return inst;
   }, [initialChapters, initialCaptions, initialMarkers, initialQualities]);
 
@@ -268,7 +261,11 @@ export function PlayerProvider({
     (type: string, value?: string | number) => {
       send({
         type: 'ACTION_TRIGGERED',
-        action: { type, value, timestamp: Date.now() },
+        action: {
+          type,
+          ...(value !== undefined ? { value } : {}),
+          timestamp: Date.now(),
+        },
       });
     },
     [send],
@@ -299,8 +296,8 @@ export function PlayerProvider({
           await video.play();
           send(smartResume ? { type: 'SMART_RESUME' } : { type: 'PLAY' });
           triggerAction(smartResume ? 'smart_resume' : 'play');
-        } catch (err: unknown) {
-          console.warn('[web-react-player] play failed:', err);
+        } catch {
+          // Playback prevented by the browser (autoplay policy).
         }
       } else {
         send(smartResume ? { type: 'SMART_RESUME' } : { type: 'PLAY' });
@@ -417,8 +414,8 @@ export function PlayerProvider({
       // Keep the native element at 100% so the GainNode owns the whole 0–300%
       // scale; otherwise the element volume would clamp the boosted signal.
       video.volume = 1;
-    } catch (err: unknown) {
-      console.warn('[web-react-player] Web Audio API initialization skipped:', err);
+    } catch {
+      // Web Audio API unavailable: fall back to the native element volume.
     }
   }, []);
 
@@ -512,7 +509,7 @@ export function PlayerProvider({
 
   const togglePIP = useCallback(async () => {
     const video = videoRef.current;
-    if (!video || !document.pictureInPictureEnabled) return;
+    if (!(video && document.pictureInPictureEnabled)) return;
 
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture().catch(() => {});

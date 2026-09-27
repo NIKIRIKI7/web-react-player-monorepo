@@ -3,18 +3,35 @@ import React from 'react';
 import * as Remotion from 'remotion';
 import { transform } from 'sucrase';
 import type { RemotionPluginManager } from '../plugins/PluginManager';
-import type { CompilerError, ITsxCompiler, RemotionCompositionConfig } from '../types';
+import type {
+  AudioMixConfig,
+  ITsxCompiler,
+  RemotionCompilerOptions,
+  RemotionCompositionConfig,
+} from '../types';
+import {
+  createAssetResolver,
+  resolveAudioMixAssets,
+  validateAudioMixConfig,
+} from './assetResolver';
+import { RemotionCompilerError } from './RemotionCompilerError';
 
-export class RemotionCompilerError extends Error implements CompilerError {
-  public readonly type: CompilerError['type'];
-  public readonly suggestion?: string;
+export { RemotionCompilerError };
 
-  constructor(type: CompilerError['type'], message: string, suggestion?: string) {
-    super(message);
-    this.type = type;
-    this.suggestion = suggestion;
-    this.name = 'RemotionCompilerError';
+function normalizeVirtualModule(moduleValue: unknown): unknown {
+  if (moduleValue !== null && typeof moduleValue === 'object') {
+    const record = moduleValue as Record<string, unknown>;
+    return {
+      ...record,
+      default: record.default ?? record,
+      __esModule: record.__esModule ?? true,
+    };
   }
+
+  return {
+    default: moduleValue,
+    __esModule: true,
+  };
 }
 
 export class BrowserTsxCompiler implements ITsxCompiler {
@@ -24,11 +41,17 @@ export class BrowserTsxCompiler implements ITsxCompiler {
     code: string,
     assets: Record<string, string> = {},
     additionalScope: Record<string, unknown> = {},
+    options: RemotionCompilerOptions = {},
   ): Promise<{
     Component: React.ComponentType<Record<string, unknown>>;
     detectedConfig?: Partial<RemotionCompositionConfig>;
   }> {
     const transformedSource = this.pluginManager.applySourceTransforms(code);
+    const scopeAssetBaseUrl =
+      typeof additionalScope.ASSET_BASE_URL === 'string'
+        ? additionalScope.ASSET_BASE_URL
+        : undefined;
+    const resolveAsset = createAssetResolver(assets, options, scopeAssetBaseUrl);
 
     let transpiledJs: string;
     try {
@@ -56,16 +79,7 @@ export class BrowserTsxCompiler implements ITsxCompiler {
           default: Remotion,
           __esModule: true,
           // Инжектим VFS (Виртуальную файловую систему) прямо в staticFile Remotion
-          staticFile: (assetPath: string) => {
-            const cleanPath = assetPath.replace(/^\/+/, '');
-            if (assets[cleanPath]) return assets[cleanPath];
-            if (assets[assetPath]) return assets[assetPath];
-
-            console.warn(
-              `[web-react-player] Warning: staticFile("${assetPath}") was called but no asset was found in the Virtual File System.`,
-            );
-            return assetPath;
-          },
+          staticFile: (assetPath: string) => resolveAsset(assetPath),
         };
       }
 
@@ -83,13 +97,14 @@ export class BrowserTsxCompiler implements ITsxCompiler {
         return { ...pluginResolved, default: pluginResolved, __esModule: true };
       }
 
-      if (additionalScope[moduleName]) {
-        return additionalScope[moduleName];
+      if (options.virtualModules && Object.hasOwn(options.virtualModules, moduleName)) {
+        return normalizeVirtualModule(options.virtualModules[moduleName]);
       }
 
-      console.warn(
-        `[BrowserTsxCompiler] Module "${moduleName}" is not registered. Using empty stub.`,
-      );
+      if (Object.hasOwn(additionalScope, moduleName)) {
+        return normalizeVirtualModule(additionalScope[moduleName]);
+      }
+
       return { __esModule: true, default: {} };
     };
 
@@ -131,6 +146,12 @@ export class BrowserTsxCompiler implements ITsxCompiler {
 
     if (exportedConfig) {
       detectedConfig = this.validateConfig(exportedConfig);
+
+      // Относительные пути аудио ("bg-music.mp3") прогоняем через VFS,
+      // чтобы AudioMixerPlugin получил уже готовые URL.
+      if (detectedConfig.audioMix) {
+        detectedConfig.audioMix = resolveAudioMixAssets(detectedConfig.audioMix, resolveAsset);
+      }
     }
 
     return {
@@ -183,6 +204,12 @@ export class BrowserTsxCompiler implements ITsxCompiler {
       } else {
         result.height = c.height;
       }
+    }
+
+    // Валидация звукового слоя: ловит опечатки в audioMix до рендера
+    const audioMix: AudioMixConfig | undefined = validateAudioMixConfig(c.audioMix);
+    if (audioMix) {
+      result.audioMix = audioMix;
     }
 
     if (errors.length > 0) {

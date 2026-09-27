@@ -14,11 +14,18 @@ export interface Chapter {
   endTime: number;
 }
 
+export interface WordCue {
+  word: string;
+  start: number;
+  end: number;
+}
+
 export interface CaptionCue {
   id?: string;
   startTime: number;
   endTime: number;
   text: string;
+  words?: WordCue[];
 }
 
 export interface Marker {

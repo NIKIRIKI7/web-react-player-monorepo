@@ -10,6 +10,7 @@ export type {
   PlayerSnapshot,
   PlayerStatus,
   VideoQuality,
+  WordCue,
 } from '@web-react-player/core';
 
 // Context
