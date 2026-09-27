@@ -2,10 +2,63 @@ import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 import { Slot } from '../utils/Slot';
 
+/**
+ * Свойства кнопки воспроизведения.
+ *
+ * Наследует все нативные атрибуты `<button>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <PlayButton asChild aria-label="Играть" />
+ * ```
+ */
 export interface PlayButtonProps extends ComponentProps<'button'> {
+  /**
+   * Рендерить компонент через слот `Slot`, не создавая собственный `<button>`.
+   *
+   * Позволяет превратить любой дочерний элемент (ссылку, иконку, `div`)
+   * в кнопку воспроизведения, сохранив все обработчики и ARIA-атрибуты.
+   *
+   * @example
+   * ```tsx
+   * <PlayButton asChild>
+   *   <a href="/watch?v=42">
+   *     <PlayIcon />
+   *   </a>
+   * </PlayButton>
+   * ```
+   */
   asChild?: boolean;
 }
 
+/**
+ * Кнопка воспроизведения/паузы.
+ *
+ * Использует гранулярную подписку на статус (`usePlayerState`), поэтому
+ * перерисовывается только при смене `status`. Клик вызывает
+ * `actions.togglePlay()`, а пользовательский `onClick` выполняется следом.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { PlayButton, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <Root>
+ *     <video src="/media/movie.mp4" />
+ *     <PlayButton />
+ *   </Root>
+ * </PlayerProvider>
+ * ```
+ *
+ * @example Рендеринг без собственной кнопки
+ * ```tsx
+ * <PlayButton asChild>
+ *   <MyIconButton aria-label="Play" />
+ * </PlayButton>
+ * ```
+ */
 export function PlayButton({ asChild, children, onClick, style, ...props }: PlayButtonProps) {
   const { actions } = usePlayerContext();
   // Granular subscription: the button only re-renders when the status changes.

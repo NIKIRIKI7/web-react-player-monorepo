@@ -13,13 +13,61 @@ import { TimeDisplay } from '../primitives/TimeDisplay';
 import { TimeSlider } from '../primitives/TimeSlider';
 import { VolumeControl } from '../primitives/VolumeControl';
 
+/**
+ * Свойства готовой стандартной раскладки {@link DefaultStandardLayout}.
+ *
+ * Наследует все нативные атрибуты `<div>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <DefaultStandardLayout debug className="layout" />
+ * ```
+ */
 export interface DefaultStandardLayoutProps extends ComponentProps<'div'> {
+  /**
+   * Показывать отладочный оверлей {@link PlayerDebug}.
+   *
+   * @defaultValue `false`
+   * @example
+   * ```tsx
+   * <DefaultStandardLayout debug />
+   * ```
+   */
   debug?: boolean;
 }
 
-// Pre-assembled "YouTube-like" layout. It composes the headless primitives into
-// a ready-made bottom control bar with a gradient, auto-hiding while idle, so
-// consumers get a familiar player UI without wiring the primitives by hand.
+/**
+ * Готовая «похожая на YouTube» раскладка плеера.
+ *
+ * Компонует headless-примитивы в готовую нижнюю панель управления с градиентом,
+ * которая автоскрывается при простое, чтобы потребителю не пришлось собирать
+ * примитивы вручную. Внутри используются {@link AmbientBackground},
+ * {@link ActionBezel}, {@link InteractiveMarkers}, {@link Captions},
+ * {@link PlayButton}, {@link TimeSlider}, {@link TimeDisplay},
+ * {@link VolumeControl}, {@link QualityMenu}, {@link SettingsMenu} и
+ * {@link FullscreenButton}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { Html5VideoProvider, Root, DefaultStandardLayout } from '@web-react-player/ui';
+ *
+ * export function Player() {
+ *   return (
+ *     <Root>
+ *       <Html5VideoProvider src="/media/movie.mp4" />
+ *       <DefaultStandardLayout />
+ *     </Root>
+ *   );
+ * }
+ * ```
+ *
+ * @example С отладочным оверлеем
+ * ```tsx
+ * <DefaultStandardLayout debug />
+ * ```
+ */
 export function DefaultStandardLayout({
   debug = false,
   style,

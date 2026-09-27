@@ -1,8 +1,41 @@
 import { type ComponentProps, useEffect, useRef } from 'react';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 
+/**
+ * Свойства выпадающего меню качества.
+ *
+ * Наследует все нативные атрибуты `<div>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <QualityMenu className="quality-menu" />
+ * ```
+ */
 export interface QualityMenuProps extends ComponentProps<'div'> {}
 
+/**
+ * Меню выбора качества видео.
+ *
+ * Открывается через `activeMenu === 'quality'`, закрывается по клику вне
+ * области и по клавише `Escape`, а затем сбрасывает `activeMenu` в `null`.
+ * Компонент ничего не отрисовывает, если список `context.qualities` пуст.
+ * Бейдж текущего режима показывает `Auto (1080p)`, если включён
+ * `context.autoQuality`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { QualityMenu, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <Root>
+ *     <video src="/media/movie.mp4" />
+ *     <QualityMenu />
+ *   </Root>
+ * </PlayerProvider>
+ * ```
+ */
 export function QualityMenu({ className, style, ...props }: QualityMenuProps) {
   const { actions, activeMenu, setActiveMenu } = usePlayerContext();
   const qualities = usePlayerState((s) => s.context.qualities);

@@ -1,8 +1,39 @@
 import { type ComponentProps, useEffect, useState } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства оверлея последнего действия (ActionBezel).
+ *
+ * Наследует все нативные атрибуты `<div>`, поэтому стили задаются
+ * через `className` и `style`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <ActionBezel className="my-bezel" style={{ bottom: 120 }} />
+ * ```
+ */
 export interface ActionBezelProps extends ComponentProps<'div'> {}
 
+/**
+ * Круглый HUD-индикатор, который на 550 мс показывает результат последнего
+ * действия: перемотку, изменение громкости, скорости, яркости или mute.
+ *
+ * Компонент подписан на `context.lastAction` и возвращает `null`,
+ * пока действие не зарегистрировано. Позиционируется абсолютно по центру
+ * и не перехватывает события мыши.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { ActionBezel } from '@web-react-player/ui';
+ *
+ * <Root>
+ *   <Html5VideoProvider src="/media/movie.mp4" />
+ *   <ActionBezel />
+ * </Root>
+ * ```
+ */
 export function ActionBezel({ className, style, ...props }: ActionBezelProps) {
   const { state } = usePlayerContext();
   const [currentAction, setCurrentAction] = useState<{ type: string; label?: string } | null>(null);

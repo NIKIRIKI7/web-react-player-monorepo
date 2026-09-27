@@ -1,10 +1,51 @@
 import { useEffect, useRef } from 'react';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 
+/**
+ * Свойства фонового свечения Ambilight.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <AmbientBackground blur={80} saturate={2.5} opacity={0.7} fps={12} />
+ * ```
+ */
 export interface AmbientBackgroundProps {
+  /**
+   * Радиус размытия кадра в пикселях.
+   *
+   * @example
+   * ```tsx
+   * <AmbientBackground blur={60} />
+   * ```
+   */
   blur?: number;
+  /**
+   * Насыщенность цвета свечения.
+   *
+   * @example
+   * ```tsx
+   * <AmbientBackground saturate={2.2} />
+   * ```
+   */
   saturate?: number;
+  /**
+   * Непрозрачность подложки свечения.
+   *
+   * @example
+   * ```tsx
+   * <AmbientBackground opacity={0.65} />
+   * ```
+   */
   opacity?: number;
+  /**
+   * Частота кадров перерисовки Canvas в секунду.
+   *
+   * @example
+   * ```tsx
+   * <AmbientBackground fps={10} />
+   * ```
+   */
   fps?: number;
 }
 
@@ -13,6 +54,36 @@ export interface AmbientBackgroundProps {
 // it never overlaps the video and the glow bleeds onto the page around it.
 // The frame is cover-cropped before drawing so letterbox black bars are never
 // copied into the canvas.
+/**
+ * Фоновое свечение (Ambilight) позади видеоплеера на базе Canvas 2D.
+ *
+ * Компонент отрисовывает сильно размытую насыщенную копию текущего кадра
+ * видео и размещается до `<Root>`, поэтому свечение не перекрывает само видео,
+ * а «вытекает» на страницу вокруг плеера. Кадр предварительно кадрируется
+ * по принципу `object-fit: cover`, так что чёрные полосы letterbox никогда
+ * не попадают в Canvas.
+ *
+ * Отрисовка идёт с ограничением по частоте кадров и максимальному размеру
+ * тайла, автоматически прекращается в компактной раскладке (`isSmall`) и при
+ * выключенном `context.ambientMode`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { AmbientBackground, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * export function App() {
+ *   return (
+ *     <PlayerProvider>
+ *       <AmbientBackground blur={70} fps={12} />
+ *       <Root>
+ *         <video src="/media/movie.mp4" />
+ *       </Root>
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ */
 export function AmbientBackground({
   blur = 60,
   saturate = 2.2,

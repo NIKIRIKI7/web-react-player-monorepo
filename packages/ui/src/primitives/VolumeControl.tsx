@@ -2,8 +2,35 @@ import { type ComponentProps, useState } from 'react';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 import { MuteButton } from './MuteButton';
 
+/**
+ * Свойства панели управления громкостью.
+ *
+ * Наследует все нативные атрибуты `<fieldset>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <VolumeControl className="volume" />
+ * ```
+ */
 export interface VolumeControlProps extends ComponentProps<'fieldset'> {}
 
+/**
+ * Панель громкости: кнопка mute плюс раскрывающийся при наведении слайдер.
+ *
+ * Диапазон слайдера расширен до `3` — так доступно усиление звука (AudioBoost)
+ * до 300 %. Ползунок показывает `0`, когда включён mute, а его акцентный цвет
+ * меняется на оранжевый при усилении выше 100 %. Ширина и прозрачность
+ * анимируются при наведении на группу.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { VolumeControl } from '@web-react-player/ui';
+ *
+ * <VolumeControl aria-label="Громкость" />
+ * ```
+ */
 export function VolumeControl({ className, style, ...props }: VolumeControlProps) {
   const { actions } = usePlayerContext();
   const gain = usePlayerState((s) => s.context.audioGain);

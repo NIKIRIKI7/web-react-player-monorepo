@@ -5,18 +5,121 @@ import { RemotionPlaybackAdapter } from '../adapter/RemotionPlaybackAdapter';
 import type { RemotionPluginManager } from '../plugins/PluginManager';
 import type { ITsxCompiler, RemotionCompositionConfig, RemotionSource } from '../types';
 
+/**
+ * Свойства моста между плеером и Remotion {@link RemotionProvider}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <RemotionProvider
+ *   source={{ type: 'code', code }}
+ *   compiler={suite.compiler}
+ *   pluginManager={suite.pluginManager}
+ * />
+ * ```
+ */
 export interface RemotionProviderProps {
+  /**
+   * Описание композиции: компонент, TSX-код или виджет.
+   *
+   * @example
+   * ```tsx
+   * source={{ type: 'component', component: Composition }}
+   * source={{ type: 'code', code: 'export const C = () => null;' }}
+   * source={{ type: 'widget', widget: 'lower-third', registry }}
+   * ```
+   */
   source: RemotionSource;
+  /**
+   * Конфигурация композиции.
+   *
+   * Если не передана, используется конфигурация, распознанная компилятором
+   * из исходного кода.
+   *
+   * @example
+   * ```tsx
+   * config={{ durationInFrames: 300, fps: 30, width: 1920, height: 1080 }}
+   * ```
+   */
   config?: RemotionCompositionConfig;
+  /**
+   * Менеджер плагинов, применяемых к композиции.
+   *
+   * @example
+   * ```tsx
+   * pluginManager={suite.pluginManager}
+   * ```
+   */
   pluginManager: RemotionPluginManager;
+  /**
+   * Компилятор TSX для сборки композиции.
+   *
+   * @example
+   * ```tsx
+   * compiler={suite.compiler}
+   * ```
+   */
   compiler: ITsxCompiler;
+  /**
+   * Инлайновые стили контейнера адаптера.
+   *
+   * @example
+   * ```tsx
+   * style={{ width: '100%', height: '100%' }}
+   * ```
+   */
   style?: React.CSSProperties;
+  /**
+   * CSS-класс контейнера адаптера.
+   *
+   * @example
+   * ```tsx
+   * className="remotion-surface"
+   * ```
+   */
   className?: string;
 }
 
-// Engine adapter for the Remotion package. It bridges the headless FSM from
-// `@web-react-player/ui` (which knows nothing about Remotion) with the Remotion
-// runtime by forwarding state down and media events back up.
+/**
+ * Провайдер движка Remotion для плеера.
+ *
+ * Мост между headless-состоянием из `@web-react-player/ui`, которое ничего не
+ * знает о Remotion, и runtime самого Remotion: состояние передаётся вниз, а
+ * медиасобытия возвращаются наверх в виде событий FSM.
+ *
+ * При монтировании отправляется событие `LOAD` с псевдо-источником
+ * (`remotion://code`, `remotion://widget` или `remotion://component`).
+ * Повторная отправка происходит только при смене самого источника: пропсы
+ * виджета меняются на каждом движении слайдера инспектора, и частая отправка
+ * сбрасывала бы текущее время и длительность.
+ *
+ * Само преобразование состояния в сцену и обратную отправку событий
+ * выполняет {@link RemotionPlaybackAdapter}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { createDefaultRemotionSuite, RemotionProvider } from '@web-react-player/remotion';
+ * import { PlayerProvider, Root, TimeSlider } from '@web-react-player/ui';
+ * import { useMemo } from 'react';
+ *
+ * export function App() {
+ *   const suite = useMemo(() => createDefaultRemotionSuite(), []);
+ *   return (
+ *     <PlayerProvider>
+ *       <Root>
+ *         <RemotionProvider
+ *           source={{ type: 'code', code: 'export const C = () => <div>Привет</div>;' }}
+ *           compiler={suite.compiler}
+ *           pluginManager={suite.pluginManager}
+ *         />
+ *         <TimeSlider />
+ *       </Root>
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ */
 export function RemotionProvider({
   source,
   config,

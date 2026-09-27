@@ -1,8 +1,61 @@
+/**
+ * Структурированное представление сочетания клавиш.
+ *
+ * Результат разбора пользовательской строки вида `Shift+ArrowLeft`, `Ctrl+K`
+ * или `space`. Используется для сопоставления с флагами сырого
+ * `KeyboardEvent`.
+ *
+ * @public
+ * @example
+ * ```ts
+ * const chord: ParsedKeyChord = { ctrl: false, alt: false, shift: true, meta: false, key: 'ArrowLeft' };
+ * ```
+ */
 export interface ParsedKeyChord {
+  /**
+   * Нажат ли `Ctrl`.
+   *
+   * @example
+   * ```ts
+   * chord.ctrl; // false
+   * ```
+   */
   ctrl: boolean;
+  /**
+   * Нажат ли `Alt`.
+   *
+   * @example
+   * ```ts
+   * chord.alt; // false
+   * ```
+   */
   alt: boolean;
+  /**
+   * Нажат ли `Shift`.
+   *
+   * @example
+   * ```ts
+   * chord.shift; // true
+   * ```
+   */
   shift: boolean;
+  /**
+   * Нажата ли клавиша `Meta`.
+   *
+   * @example
+   * ```ts
+   * chord.meta; // false
+   * ```
+   */
   meta: boolean;
+  /**
+   * Основная клавиша в нижнем регистре.
+   *
+   * @example
+   * ```ts
+   * chord.key; // 'arrowleft'
+   * ```
+   */
   key: string;
 }
 

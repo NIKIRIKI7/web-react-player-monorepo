@@ -13,10 +13,26 @@ export type WhisperXCue = CaptionCue & {
 const CHAPTER_PATTERN = /^##\s+\[(\d{2}:\d{2})\]\s+(.+)$/gm;
 
 function timeToSeconds(value: string): number | null {
-  const [minutes, seconds] = value.split(':').map(Number);
-  if (!(Number.isFinite(minutes) && Number.isFinite(seconds)) || seconds >= 60) {
+  const parts = value.split(':');
+  const minStr = parts[0];
+  const secStr = parts[1];
+
+  if (minStr === undefined || secStr === undefined || parts.length !== 2) {
     return null;
   }
+
+  const minutes = Number(minStr);
+  const seconds = Number(secStr);
+
+  if (
+    !(Number.isFinite(minutes) && Number.isFinite(seconds)) ||
+    minutes < 0 ||
+    seconds < 0 ||
+    seconds >= 60
+  ) {
+    return null;
+  }
+
   return minutes * 60 + seconds;
 }
 
@@ -26,8 +42,16 @@ function parseChapters(markdown: string): Chapter[] {
   let previousStart: number | null = null;
 
   for (const match of markdown.matchAll(CHAPTER_PATTERN)) {
-    const startTime = timeToSeconds(match[1]);
+    const timeStr = match[1];
+    const titleStr = match[2];
+
+    if (timeStr === undefined || titleStr === undefined) continue;
+
+    const startTime = timeToSeconds(timeStr);
     if (startTime === null) continue;
+
+    const title = titleStr.trim();
+    if (title.length === 0) continue;
 
     if (previousStart !== null) {
       chapters.push({
@@ -37,7 +61,7 @@ function parseChapters(markdown: string): Chapter[] {
       });
     }
 
-    previousTitle = match[2].trim();
+    previousTitle = title;
     previousStart = startTime;
   }
 

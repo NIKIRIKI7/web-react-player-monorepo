@@ -12,21 +12,177 @@ import type {
   VidoraWidgetDefinition,
 } from '../types';
 
+/**
+ * Свойства низкоуровневого адаптера воспроизведения Remotion.
+ *
+ * В отличие от {@link RemotionProviderProps} адаптер не зависит от контекста
+ * плеера: состояние передаётся пропсами, а события возвращаются колбэками.
+ * Обычно используется {@link RemotionProvider}, который подставляет эти
+ * значения из FSM.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <RemotionPlaybackAdapter
+ *   source={{ type: 'code', code }}
+ *   pluginManager={suite.pluginManager}
+ *   compiler={suite.compiler}
+ *   fsmStatus="paused"
+ *   currentTime={0}
+ *   playbackRate={1}
+ *   volume={1}
+ *   muted={false}
+ *   onTimeUpdate={(seconds) => console.log(seconds)}
+ *   onMetadataLoaded={(duration, fps) => console.log(duration, fps)}
+ *   onPlaybackStateChange={(playing) => console.log(playing)}
+ *   onError={(error) => console.error(error)}
+ * />
+ * ```
+ */
 export interface RemotionPlaybackAdapterProps {
+  /**
+   * Описание композиции: готовый компонент, TSX-код или виджет из реестра.
+   *
+   * @example
+   * ```tsx
+   * source={{ type: 'code', code, assets: { logo: '/media/logo.png' } }}
+   * ```
+   */
   source: RemotionSource;
+  /**
+   * Менеджер плагинов, оборачивающих компонент перед рендерингом.
+   *
+   * @example
+   * ```tsx
+   * pluginManager={suite.pluginManager}
+   * ```
+   */
   pluginManager: RemotionPluginManager;
+  /**
+   * Компилятор TSX, используемый для источников типа `code`.
+   *
+   * @example
+   * ```tsx
+   * compiler={suite.compiler}
+   * ```
+   */
   compiler: ITsxCompiler;
+  /**
+   * Текущий статус FSM плеера.
+   *
+   * При значении `playing` адаптер вызывает `play()`, при любом другом
+   * значении, если плеер играет, — `pause()`.
+   *
+   * @example
+   * ```tsx
+   * fsmStatus="playing"
+   * ```
+   */
   fsmStatus: string;
+  /**
+   * Текущее время воспроизведения в секундах.
+   *
+   * Переводится в кадр через `activeConfig.fps` и применяется через
+   * `seekTo`, если расхождение больше одного кадра.
+   *
+   * @example
+   * ```tsx
+   * currentTime={12.5}
+   * ```
+   */
   currentTime: number;
+  /**
+   * Скорость воспроизведения.
+   *
+   * @example
+   * ```tsx
+   * playbackRate={0.5}
+   * ```
+   */
   playbackRate: number;
+  /**
+   * Громкость в диапазоне 0..1; игнорируется, если включён `muted`.
+   *
+   * @example
+   * ```tsx
+   * volume={0.8}
+   * ```
+   */
   volume: number;
+  /**
+   * Признак отключения звука.
+   *
+   * @example
+   * ```tsx
+   * muted={false}
+   * ```
+   */
   muted: boolean;
+  /**
+   * Вызывается при смене кадра: получает время в секундах.
+   *
+   * @example
+   * ```tsx
+   * onTimeUpdate={(seconds) => send({ type: 'TIME_UPDATE', currentTime: seconds })}
+   * ```
+   */
   onTimeUpdate: (seconds: number) => void;
+  /**
+   * Вызывается после успешной компиляции: получает длительность в секундах и `fps`.
+   *
+   * @example
+   * ```tsx
+   * onMetadataLoaded={(duration, fps) => console.log(`${duration}s @ ${fps}fps`)}
+   * ```
+   */
   onMetadataLoaded: (duration: number, fps: number) => void;
+  /**
+   * Вызывается при старте и паузе воспроизведения.
+   *
+   * @example
+   * ```tsx
+   * onPlaybackStateChange={(isPlaying) => send({ type: isPlaying ? 'PLAYING' : 'PAUSE' })}
+   * ```
+   */
   onPlaybackStateChange: (isPlaying: boolean) => void;
+  /**
+   * Вызывается при ошибке компиляции или рантайм-ошибке внутри сцены.
+   *
+   * @example
+   * ```tsx
+   * onError={(error) => send({ type: 'ERROR', error })}
+   * ```
+   */
   onError: (error: Error) => void;
+  /**
+   * Конфигурация по умолчанию: 150 кадров, 30 fps, 1920x1080.
+   *
+   * Распознанная из кода и из виджета конфигурация накладывается поверх
+   * неё, а `source.config` имеет высший приоритет.
+   *
+   * @example
+   * ```tsx
+   * defaultConfig={{ durationInFrames: 300, fps: 30, width: 1080, height: 1920 }}
+   * ```
+   */
   defaultConfig?: RemotionCompositionConfig | undefined;
+  /**
+   * Инлайновые стили внешнего контейнера.
+   *
+   * @example
+   * ```tsx
+   * style={{ aspectRatio: '16 / 9' }}
+   * ```
+   */
   style?: React.CSSProperties | undefined;
+  /**
+   * CSS-класс внешнего контейнера.
+   *
+   * @example
+   * ```tsx
+   * className="remotion-player"
+   * ```
+   */
   className?: string | undefined;
 }
 
@@ -58,6 +214,54 @@ class AdapterErrorBoundary extends React.Component<
   }
 }
 
+/**
+ * Адаптер, монтирующий Remotion `Player` и синхронизирующий его с плеером.
+ *
+ * Адаптер выполняет пять задач:
+ *
+ * 1. Компилирует источник (компонент, виджет или TSX-код) и строит финальную
+ *    конфигурацию композиции.
+ * 2. Разрешает относительные пути аудиодорожек в финальном конфиге.
+ * 3. Оборачивает компонент плагинами через
+ *    {@link RemotionPluginManager.applyComponentWrappers}.
+ * 4. Синхронизирует состояние FSM с плеером: воспроизведение, позицию,
+ *    скорость, громкость и mute.
+ * 5. Транслирует события плеера обратно в колбэки: смена кадра, play, pause
+ *    и рантайм-ошибки через error boundary.
+ *
+ * Компиляция кешируется по ключу источника, поэтому изменения пропсов виджета
+ * не вызывают пересборку. Различие кадра больше одного кадра считается
+ * расхождением; при обратной синхронизации позиция игнорируется до конца
+ * кадра, чтобы не бороться с плеером.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { createDefaultRemotionSuite, RemotionPlaybackAdapter } from '@web-react-player/remotion';
+ *
+ * const suite = createDefaultRemotionSuite();
+ *
+ * export function Scene() {
+ *   const [time, setTime] = useState(0);
+ *   return (
+ *     <RemotionPlaybackAdapter
+ *       source={{ type: 'code', code: 'export const C = () => <div/>;' }}
+ *       pluginManager={suite.pluginManager}
+ *       compiler={suite.compiler}
+ *       fsmStatus="playing"
+ *       currentTime={time}
+ *       playbackRate={1}
+ *       volume={0.9}
+ *       muted={false}
+ *       onTimeUpdate={setTime}
+ *       onMetadataLoaded={(duration) => console.log(duration)}
+ *       onPlaybackStateChange={(playing) => console.log(playing)}
+ *       onError={(error) => console.error(error)}
+ *     />
+ *   );
+ * }
+ * ```
+ */
 export const RemotionPlaybackAdapter: React.FC<RemotionPlaybackAdapterProps> = ({
   source,
   pluginManager,

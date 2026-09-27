@@ -1,8 +1,34 @@
 import type { ComponentProps, MouseEvent } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства кнопки mute.
+ *
+ * Наследует все нативные атрибуты `<button>`, включая `ref` и `onClick`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <MuteButton aria-label="Звук" />
+ * ```
+ */
 export interface MuteButtonProps extends ComponentProps<'button'> {}
 
+/**
+ * Кнопка переключения звука, отражающая текущее состояние `context.muted`.
+ *
+ * По умолчанию рисует иконку динамика YouTube, но любой `children`
+ * переопределяет её. Собственный `onClick` вызывается после
+ * `actions.toggleMute()`, поэтому обработчики можно свободно комбинировать.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { MuteButton } from '@web-react-player/ui';
+ *
+ * <MuteButton onClick={() => console.log('mute toggled')}>Звук</MuteButton>
+ * ```
+ */
 export function MuteButton({ ref, children, onClick, style, ...props }: MuteButtonProps) {
   const { state, actions } = usePlayerContext();
   const isMuted = state.context.muted;

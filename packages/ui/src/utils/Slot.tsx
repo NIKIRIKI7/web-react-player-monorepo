@@ -12,8 +12,48 @@ import {
 // Extends the standard HTML attributes so style/className/onClick/aria-* stay typed
 // without an index signature (an index signature would erase named props in
 // React's PropsWithoutRef and force casts at every use site).
+/**
+ * Свойства слота {@link Slot}.
+ *
+ * Наследует стандартные HTML-атрибуты, поэтому `style`, `className`,
+ * `onClick` и `aria-*` остаются типизированными без индексной сигнатуры
+ * (индексная сигнатура стёрла бы именованные свойства в
+ * `PropsWithoutRef` и заставляла бы делать приведения типов в каждом месте
+ * использования).
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { Slot } from '@web-react-player/ui';
+ *
+ * <Slot className="button" onClick={handleClick}>
+ *   <button>Воспроизвести</button>
+ * </Slot>
+ * ```
+ */
 export interface SlotProps extends HTMLAttributes<HTMLElement> {
+  /**
+   * Единственный дочерний элемент, которому передаются все свойства.
+   *
+   * Если дочерний узел не является валидным React-элементом, слот
+   * отрисовывает `null`.
+   *
+   * @example
+   * ```tsx
+   * <Slot>
+   *   <a href="/watch">Смотреть</a>
+   * </Slot>
+   * ```
+   */
   children?: ReactNode;
+  /**
+   * Тип HTML-элемента.
+   *
+   * @example
+   * ```tsx
+   * <Slot type="submit" />
+   * ```
+   */
   type?: string | undefined;
 }
 
@@ -33,6 +73,25 @@ function mergeRefs<T>(...refs: Array<Ref<T> | undefined>): (node: T | null) => v
   };
 }
 
+/**
+ * Компонент-слот: передаёт свои свойства единственному дочернему элементу
+ * вместо создания обёртки.
+ *
+ * Свойства ребёнка имеют приоритет, кроме составных: `style` сливается,
+ * `className` конкатенируется, а `onClick` и `onPointerDown` вызывают
+ * обработчики обоих уровней. Переданный `ref` объединяется с `ref` ребёнка.
+ * Используется для поддержки паттерна `asChild` (см. `PlayButton`).
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { Slot } from '@web-react-player/ui';
+ *
+ * <Slot aria-label="Play" className="icon-button" onClick={play}>
+ *   <CustomIcon />
+ * </Slot>
+ * ```
+ */
 export const Slot = forwardRef<HTMLElement, SlotProps>((props, ref) => {
   const { children, ...restProps } = props;
 

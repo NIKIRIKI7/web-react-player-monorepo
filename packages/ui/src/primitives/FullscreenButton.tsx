@@ -1,8 +1,34 @@
 import type { ComponentProps } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства кнопки полноэкранного режима.
+ *
+ * Наследует все нативные атрибуты `<button>`, включая `ref` и `onClick`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <FullscreenButton aria-label="Во весь экран" />
+ * ```
+ */
 export interface FullscreenButtonProps extends ComponentProps<'button'> {}
 
+/**
+ * Кнопка переключения полноэкранного режима.
+ *
+ * Вызывает `actions.toggleFullscreen()` и отражает текущее состояние
+ * `context.fullscreen` в `aria-pressed` и атрибуте `data-fullscreen`.
+ * По умолчанию рисует иконку YouTube, но любой `children` её переопределяет.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { FullscreenButton } from '@web-react-player/ui';
+ *
+ * <FullscreenButton onClick={() => console.log('fullscreen toggled')} />
+ * ```
+ */
 export function FullscreenButton({
   ref,
   children,

@@ -24,231 +24,210 @@ import { RefAttributes } from 'react';
 import { VideoQuality } from '@web-react-player/core';
 import { WordCue } from '@web-react-player/core';
 
-// @public (undocumented)
+// @public
 export function ActionBezel(input: ActionBezelProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface ActionBezelProps extends ComponentProps<'div'> {
 }
 
-// @public (undocumented)
+// @public
 export function AmbientBackground(input: AmbientBackgroundProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface AmbientBackgroundProps {
-    // (undocumented)
     blur?: number;
-    // (undocumented)
     fps?: number;
-    // (undocumented)
     opacity?: number;
-    // (undocumented)
     saturate?: number;
 }
 
 export { CaptionCue }
 
-// @public (undocumented)
+// @public
 export function CaptionCustomizer(input: CaptionCustomizerProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface CaptionCustomizerProps {
-    // (undocumented)
     isOpen: boolean;
-    // (undocumented)
     onClose: () => void;
 }
 
-// @public (undocumented)
+// @public
 export type CaptionFontFamily = 'pro-sans' | 'mono-sans' | 'pro-serif' | 'mono-serif' | 'casual' | 'cursive';
 
-// @public (undocumented)
+// @public
 export function CaptionPreviewBox(input: {
     styles: CaptionStylePreferences;
 }): JSX.Element;
 
-// @public (undocumented)
+// @public
 export function Captions(input: CaptionsProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface CaptionsProps extends ComponentProps<'section'> {
-    // (undocumented)
     activeWordColor?: string;
-    // (undocumented)
     passedWordOpacity?: number;
-    // (undocumented)
     wordTransition?: string;
 }
 
-// @public (undocumented)
+// @public
 export interface CaptionStylePreferences {
-    // (undocumented)
     backgroundColor: string;
-    // (undocumented)
     backgroundOpacity: number;
-    // (undocumented)
     fontFamily: CaptionFontFamily;
-    // (undocumented)
     fontSize: string;
-    // (undocumented)
     textColor: string;
-    // (undocumented)
     textShadow: CaptionTextShadow;
 }
 
-// @public (undocumented)
+// @public
 export function captionStylesToCssVariables(styles: CaptionStylePreferences): Record<string, string>;
 
-// @public (undocumented)
+// @public
 export type CaptionTextShadow = 'none' | 'drop-shadow' | 'raised' | 'depressed' | 'outline';
 
 export { Chapter }
 
-// Warning: (ae-forgotten-export) The symbol "ResolvedBinding" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
+// @public
 export function compileHotkeyBindings(userHotkeys?: HotkeysMap): ResolvedBinding[];
 
-// @public (undocumented)
+// @public
 export type ContainerTier = 'xl' | 'lg' | 'md' | 'sm' | 'xs';
 
-// @public (undocumented)
+// @public
 export const DEFAULT_CAPTION_STYLES: CaptionStylePreferences;
 
-// @public (undocumented)
+// @public
 export const DEFAULT_HOTKEYS: Record<PlayerCommand, string[]>;
 
-// @public (undocumented)
+// @public
 export function DefaultStandardLayout(input: DefaultStandardLayoutProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface DefaultStandardLayoutProps extends ComponentProps<'div'> {
-    // (undocumented)
     debug?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export function DocumentPipPortal(input: DocumentPipPortalProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface DocumentPipPortalProps {
-    // (undocumented)
     children: ReactNode;
-    // (undocumented)
     height?: number;
-    // (undocumented)
     width?: number;
 }
 
-// @public (undocumented)
+// @public
 export function executeCanonicalCommand(command: PlayerCommand, context: PlayerContextValue): void;
 
-// @public (undocumented)
+// @public
 export function formatTime(seconds: number): string;
 
-// @public (undocumented)
+// @public
 export function FullscreenButton(input: FullscreenButtonProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface FullscreenButtonProps extends ComponentProps<'button'> {
 }
 
-// @public (undocumented)
+// @public
 export function getContainerTier(width: number): ContainerTier;
 
-// @public (undocumented)
+// @public
 export function handleKeyboardShortcut(event: KeyboardEvent, bindings: ResolvedBinding[], context: PlayerContextValue): boolean;
 
-// @public (undocumented)
+// @public
 export function hexToRgba(hex: string, alpha: number): string;
 
-// @public (undocumented)
+// @public
 export type HotkeyAction = PlayerCommand | HotkeyHandler;
 
-// @public (undocumented)
+// @public
 export interface HotkeyBindingDescriptor {
-    // (undocumented)
     description?: string;
-    // (undocumented)
     handler: HotkeyAction;
-    // (undocumented)
     keys: string | string[];
 }
 
-// @public (undocumented)
+// @public
 export type HotkeyHandler = (context: PlayerContextValue, event: KeyboardEvent) => void;
 
-// @public (undocumented)
+// @public
 export type HotkeysMap = Record<string, string | string[] | HotkeyAction | HotkeyBindingDescriptor>;
 
-// @public (undocumented)
+// @public
 export function Html5VideoProvider(input: Html5VideoProviderProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface Html5VideoProviderProps extends ComponentProps<'video'> {
 }
 
-// @public (undocumented)
+// @public
 export function InteractiveMarkers(input: InteractiveMarkersProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface InteractiveMarkersProps {
-    // (undocumented)
     className?: string;
-    // (undocumented)
     style?: CSSProperties;
 }
 
-// @public (undocumented)
+// @public
 export function loadCaptionPreferences(): CaptionStylePreferences;
 
 export { Marker }
 
-// @public (undocumented)
+// @public
 export function Match(input: MatchProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export type MatchMedia = 'sm' | 'lg';
 
-// @public (undocumented)
+// @public
 export interface MatchProps {
-    // (undocumented)
     children: ReactNode | ((isMatched: boolean) => ReactNode);
-    // (undocumented)
     media: MatchMedia;
 }
 
-// @public (undocumented)
+// @public
 export function MuteButton(input: MuteButtonProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface MuteButtonProps extends ComponentProps<'button'> {
 }
 
-// @public (undocumented)
+// @public
+export interface ParsedKeyChord {
+    alt: boolean;
+    ctrl: boolean;
+    key: string;
+    meta: boolean;
+    shift: boolean;
+}
+
+// @public
 export function PIPButton(input: PIPButtonProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface PIPButtonProps extends ComponentProps<'button'> {
 }
 
-// @public (undocumented)
+// @public
 export function PlayButton(input: PlayButtonProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface PlayButtonProps extends ComponentProps<'button'> {
-    // (undocumented)
     asChild?: boolean;
 }
 
 export { PlayerActionRecord }
 
-// @public (undocumented)
+// @public
 export type PlayerCommand = 'togglePlay' | 'play' | 'pause' | 'seekForward5' | 'seekBackward5' | 'seekForward10' | 'seekBackward10' | 'volumeUp' | 'volumeDown' | 'toggleMute' | 'toggleFullscreen' | 'toggleCaptions' | 'toggleTheater' | 'speedUp' | 'slowDown' | 'stepFrameForward' | 'stepFrameBackward' | 'skipActiveMarker' | 'seekTo0' | 'seekTo10' | 'seekTo20' | 'seekTo30' | 'seekTo40' | 'seekTo50' | 'seekTo60' | 'seekTo70' | 'seekTo80' | 'seekTo90';
 
-// @public (undocumented)
+// @public
 export interface PlayerContextValue {
-    // (undocumented)
     actions: {
         play: (smartResume?: boolean) => Promise<void>;
         pause: (reason?: 'visibility' | 'intersection') => void;
@@ -270,46 +249,29 @@ export interface PlayerContextValue {
         triggerAction: (type: string, value?: string | number) => void;
         setQuality: (qualityId: string | 'auto') => void;
     };
-    // (undocumented)
     activeMenu: string | null;
-    // (undocumented)
     captionStyles: CaptionStylePreferences;
-    // (undocumented)
     controlsVisible: boolean;
-    // (undocumented)
     isScrubbing: boolean;
-    // (undocumented)
     isSmall: boolean;
-    // (undocumented)
     rootRef: React.RefObject<HTMLDivElement | null>;
-    // (undocumented)
     send: (event: PlayerEvent) => void;
-    // (undocumented)
     setActiveMenu: (menu: string | null) => void;
-    // (undocumented)
     setCaptionStyles: (styles: CaptionStylePreferences) => void;
-    // (undocumented)
     setControlsVisible: (visible: boolean) => void;
-    // (undocumented)
     setIsScrubbing: (scrubbing: boolean) => void;
-    // (undocumented)
     setIsSmall: (isSmall: boolean) => void;
-    // (undocumented)
     state: PlayerSnapshot;
-    // (undocumented)
     subscribe: (listener: PlayerListener) => () => void;
-    // (undocumented)
     tier: ContainerTier;
-    // (undocumented)
     videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
-// @public (undocumented)
+// @public
 export function PlayerDebug(input: PlayerDebugProps): ReactPortal | null;
 
-// @public (undocumented)
+// @public
 export interface PlayerDebugProps {
-    // (undocumented)
     enabled?: boolean;
 }
 
@@ -317,20 +279,15 @@ export { PlayerEvent }
 
 export { PlayerMiddleware }
 
-// @public (undocumented)
+// @public
 export function PlayerProvider(input: PlayerProviderProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface PlayerProviderProps {
-    // (undocumented)
     children: ReactNode;
-    // (undocumented)
     initialCaptions?: CaptionCue[];
-    // (undocumented)
     initialChapters?: Chapter[];
-    // (undocumented)
     initialMarkers?: Marker[];
-    // (undocumented)
     initialQualities?: VideoQuality[];
 }
 
@@ -338,104 +295,95 @@ export { PlayerSnapshot }
 
 export { PlayerStatus }
 
-// @public (undocumented)
+// @public
 export function QualityMenu(input: QualityMenuProps): JSX.Element | null;
 
-// @public (undocumented)
+// @public
 export interface QualityMenuProps extends ComponentProps<'div'> {
 }
 
-// @public (undocumented)
+// @public
+export interface ResolvedBinding {
+    action: HotkeyAction;
+    chord: ParsedKeyChord;
+}
+
+// @public
 export function Root(input: RootProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface RootProps extends ComponentProps<'div'> {
-    // (undocumented)
     hotkeys?: HotkeysMap;
-    // (undocumented)
     idleTimeout?: number;
-    // (undocumented)
     keyboardShortcuts?: boolean;
-    // (undocumented)
     smallWhenWidth?: number;
 }
 
-// @public (undocumented)
+// @public
 export function saveCaptionPreferences(styles: CaptionStylePreferences): void;
 
-// @public (undocumented)
+// @public
 export function ScreenGestures(input: ScreenGesturesProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface ScreenGesturesProps extends ComponentProps<'div'> {
 }
 
-// @public (undocumented)
+// @public
 export function SettingsMenu(input: SettingsMenuProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface SettingsMenuProps extends ComponentProps<'div'> {
-    // (undocumented)
     onOpenSubtitleStyles?: () => void;
 }
 
-// @public (undocumented)
+// @public
 export const Slot: ForwardRefExoticComponent<SlotProps & RefAttributes<HTMLElement>>;
 
-// @public (undocumented)
+// @public
 export interface SlotProps extends HTMLAttributes<HTMLElement> {
-    // (undocumented)
     children?: ReactNode;
-    // (undocumented)
     type?: string | undefined;
 }
 
-// @public (undocumented)
+// @public
 export function TimeDisplay(input: TimeDisplayProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface TimeDisplayProps extends ComponentProps<'div'> {
-    // (undocumented)
     type?: 'current' | 'duration' | 'remaining';
 }
 
-// @public (undocumented)
+// @public
 export function TimeSlider(input: TimeSliderProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface TimeSliderProps extends Omit<ComponentProps<'div'>, 'onChange'> {
-    // (undocumented)
     bufferClassName?: string;
-    // (undocumented)
     previewClassName?: string;
-    // (undocumented)
     progressClassName?: string;
-    // (undocumented)
     thumbClassName?: string;
-    // (undocumented)
     trackClassName?: string;
 }
 
-// @public (undocumented)
+// @public
 export const UI_PACKAGE_READY = true;
 
-// @public (undocumented)
+// @public
 export function usePlayerContext(): PlayerContextValue;
 
-// @public (undocumented)
+// @public
 export function usePlayerState<T>(selector: (state: PlayerSnapshot) => T): T;
 
 export { VideoQuality }
 
-// @public (undocumented)
+// @public
 export function VolumeControl(input: VolumeControlProps): JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface VolumeControlProps extends ComponentProps<'fieldset'> {
 }
 
 export { WordCue }
-
-// (No @packageDocumentation comment for this package)
 
 ```

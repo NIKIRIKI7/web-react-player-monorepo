@@ -1,25 +1,189 @@
 import type { ExportProgressData } from '../types';
 
+/**
+ * Параметры мастеринга видео на стороне FFmpeg-бэкенда.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import type { MasteringConfig } from '@web-react-player/remotion';
+ *
+ * const config: MasteringConfig = {
+ *   lufsTarget: -14,
+ *   applyNoiseGate: true,
+ *   removeSilence: false,
+ *   videoQuality: 'high',
+ * };
+ * ```
+ */
 export interface MasteringConfig {
+  /**
+   * Целевая громкость по стандарту LUFS.
+   *
+   * Для потоковой публикации обычно `-14`, для YouTube — `-14 LUFS`.
+   *
+   * @example
+   * ```ts
+   * lufsTarget: -14
+   * ```
+   */
   lufsTarget: number;
+  /**
+   * Применять ли шумовой gate к аудиодорожкам.
+   *
+   * Подавляет постоянный фоновый шум в тихих участках.
+   *
+   * @example
+   * ```ts
+   * applyNoiseGate: true
+   * ```
+   */
   applyNoiseGate: boolean;
+  /**
+   * Удалять ли паузы из дорожки диктора.
+   *
+   * @example
+   * ```ts
+   * removeSilence: true
+   * ```
+   */
   removeSilence: boolean;
+  /**
+   * Пресет качества видео на выходе.
+   *
+   * @example
+   * ```ts
+   * videoQuality: 'high'
+   * ```
+   */
   videoQuality: 'draft' | 'standard' | 'high';
 }
 
+/**
+ * Статус задачи рендеринга на бэкенде.
+ *
+ * - `processing` — идёт рендеринг;
+ * - `completed` — файл готов;
+ * - `error` — рендеринг завершился ошибкой.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import type { VidoraRenderStatus } from '@web-react-player/remotion';
+ *
+ * const status: VidoraRenderStatus = 'completed';
+ * ```
+ */
 export type VidoraRenderStatus = 'processing' | 'completed' | 'error';
 
+/**
+ * Прогресс рендеринга с серверным статусом и ссылкой на результат.
+ *
+ * @public
+ * @example
+ * ```ts
+ * service.startPipeline('scenario-1', config, ({ progress, status, downloadUrl }) => {
+ *   console.log(progress, status, downloadUrl);
+ * });
+ * ```
+ */
 export interface VidoraRenderProgress extends ExportProgressData {
+  /**
+   * Текущий статус задачи.
+   *
+   * @example
+   * ```ts
+   * status: 'processing'
+   * ```
+   */
   status: VidoraRenderStatus;
+  /**
+   * Текстовое сообщение о ходе рендеринга.
+   *
+   * @example
+   * ```ts
+   * message: 'Кодирование кадра 120'
+   * ```
+   */
   message?: string;
+  /**
+   * Ссылка на скачивание готового файла.
+   *
+   * Заполняется только при статусе `completed`.
+   *
+   * @example
+   * ```ts
+   * downloadUrl: 'https://example.com/out/video.mp4'
+   * ```
+   */
   downloadUrl?: string;
 }
 
+/**
+ * Параметры клиента FFmpeg-бэкенда.
+ *
+ * Все сетевые зависимости инъецируются, что упрощает тестирование.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { VidoraFFmpegService, type VidoraFFmpegServiceOptions } from '@web-react-player/remotion';
+ *
+ * const options: VidoraFFmpegServiceOptions = {
+ *   apiUrl: 'https://api.example.com/render',
+ *   headers: { Authorization: `Bearer ${token}` },
+ * };
+ * const service = new VidoraFFmpegService(options);
+ * ```
+ */
 export interface VidoraFFmpegServiceOptions {
+  /**
+   * Базовый URL API рендеринга без завершающего слэша.
+   *
+   * @defaultValue `'http://localhost:8355/api/v1/render'`
+   * @example
+   * ```ts
+   * apiUrl: 'https://api.example.com/api/v1/render'
+   * ```
+   */
   apiUrl?: string | undefined;
+  /**
+   * Заголовки, добавляемые ко всем запросам.
+   *
+   * @example
+   * ```ts
+   * headers: { Authorization: 'Bearer token' }
+   * ```
+   */
   headers?: HeadersInit | undefined;
+  /**
+   * Реализация `fetch` (например, мок в тестах).
+   *
+   * @defaultValue `globalThis.fetch`
+   * @example
+   * ```ts
+   * fetch: async () => new Response('{}')
+   * ```
+   */
   fetch?: typeof globalThis.fetch | undefined;
+  /**
+   * Фабрика `EventSource` для подписки на SSE-прогресс.
+   *
+   * @example
+   * ```ts
+   * createEventSource: (url) => new EventSource(url)
+   * ```
+   */
   createEventSource?: ((url: string) => EventSource) | undefined;
+  /**
+   * Сигнал отмены по умолчанию для всех операций.
+   *
+   * @example
+   * ```ts
+   * const controller = new AbortController();
+   * signal: controller.signal
+   * ```
+   */
   signal?: AbortSignal | undefined;
 }
 
@@ -85,6 +249,38 @@ function parseProgress(value: unknown): VidoraRenderProgress {
   };
 }
 
+/**
+ * Клиент серверного FFmpeg-пайплайна мастеринга.
+ *
+ * Отправляет сценарий с конфигурацией мастеринга на бэкенд, подписывается на
+ * SSE-поток прогресса и возвращает ссылку на готовый файл. Сетевые
+ * зависимости (`fetch`, `EventSource`) внедряются через
+ * {@link VidoraFFmpegServiceOptions}, поэтому сервис легко тестируется.
+ *
+ * Ответы и события прогресса проходят через нормализацию: неизвестные поля
+ * игнорируются, числовые значения зажимаются в допустимые диапазоны,
+ * а ссылка на результат принимается как в `downloadUrl`, так и в
+ * `download_url`.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { VidoraFFmpegService, type MasteringConfig } from '@web-react-player/remotion';
+ *
+ * const service = new VidoraFFmpegService({ apiUrl: 'https://api.example.com/render' });
+ * const config: MasteringConfig = {
+ *   lufsTarget: -14,
+ *   applyNoiseGate: true,
+ *   removeSilence: false,
+ *   videoQuality: 'high',
+ * };
+ *
+ * const downloadUrl = await service.startPipeline('scenario-1', config, ({ progress }) => {
+ *   console.log(`${Math.round(progress * 100)}%`);
+ * });
+ * console.log(downloadUrl);
+ * ```
+ */
 export class VidoraFFmpegService {
   private readonly apiUrl: string;
   private readonly headers: Headers;
@@ -92,6 +288,19 @@ export class VidoraFFmpegService {
   private readonly createEventSource: (url: string) => EventSource;
   private readonly signal?: AbortSignal | undefined;
 
+  /**
+   * Создаёт клиент FFmpeg-бэкенда.
+   *
+   * @param options - URL API, заголовки, сетевые зависимости и сигнал отмены.
+   * @public
+   * @example
+   * ```ts
+   * const service = new VidoraFFmpegService({
+   *   apiUrl: 'http://localhost:8355/api/v1/render',
+   *   headers: { Authorization: 'Bearer token' },
+   * });
+   * ```
+   */
   constructor(options: VidoraFFmpegServiceOptions = {}) {
     this.apiUrl = (options.apiUrl ?? 'http://localhost:8355/api/v1/render').replace(/\/+$/, '');
     this.headers = new Headers(options.headers);
@@ -108,6 +317,31 @@ export class VidoraFFmpegService {
     this.signal = options.signal;
   }
 
+  /**
+   * Запускает рендеринг и подписывается на прогресс.
+   *
+   * Отправляет `POST /start` с идентификатором сценария и конфигурацией
+   * мастеринга, затем открывает SSE-подписку на `GET /progress/{jobId}`.
+   * Промис разрешается ссылкой на скачивание при статусе `completed` и
+   * отклоняется при статусе `error`, разрыве потока или отмене сигнала.
+   *
+   * @param scenarioId - Идентификатор сценария; не может быть пустым.
+   * @param config - Параметры мастеринга.
+   * @param onProgress - Обработчик каждого события прогресса.
+   * @param signal - Сигнал отмены; по умолчанию берётся из конструктора.
+   * @returns Ссылка на скачивание готового файла.
+   * @throws Если `scenarioId` пуст, ответ сервера некорректен или рендеринг
+   * завершился ошибкой.
+   * @public
+   * @example
+   * ```ts
+   * const url = await service.startPipeline(
+   *   'scenario-1',
+   *   { lufsTarget: -14, applyNoiseGate: true, removeSilence: false, videoQuality: 'standard' },
+   *   ({ status, progress, downloadUrl }) => console.log(status, progress, downloadUrl),
+   * );
+   * ```
+   */
   public async startPipeline(
     scenarioId: string,
     config: MasteringConfig,
@@ -200,6 +434,24 @@ export class VidoraFFmpegService {
     });
   }
 
+  /**
+   * Отменяет запущенный рендеринг.
+   *
+   * Отправляет `DELETE /jobs/{jobId}`. Ответ `404` считается успехом,
+   * поскольку задача уже не существует и отменять её не требуется.
+   *
+   * @param jobId - Идентификатор задачи; не может быть пустым.
+   * @param signal - Сигнал отмены; по умолчанию берётся из конструктора.
+   * @throws Если `jobId` пуст или сервер вернул ошибку, отличную от `404`.
+   * @public
+   * @example
+   * ```ts
+   * const controller = new AbortController();
+   * const job = service.startPipeline('scenario-1', config, undefined, controller.signal);
+   * controller.abort();
+   * await service.cancel('job-42');
+   * ```
+   */
   public async cancel(jobId: string, signal = this.signal): Promise<void> {
     if (jobId.trim().length === 0) {
       throw new Error('jobId must not be empty.');

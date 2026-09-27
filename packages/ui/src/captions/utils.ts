@@ -25,6 +25,24 @@ const TEXT_SHADOW_MAP: Record<CaptionTextShadow, string> = {
   outline: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000',
 };
 
+/**
+ * Конвертирует HEX-код цвета и коэффициент прозрачности в строку формата `rgba()`.
+ *
+ * Некорректные символы молча трактуются как нулевые каналы, поэтому функция
+ * безопасна для пользовательского ввода из формы настроек.
+ *
+ * @param hex - Цвет в шестнадцатеричном формате (`#fff` или `#ffffff`).
+ * @param alpha - Коэффициент прозрачности от `0` до `1`.
+ * @returns Строка CSS формата `rgba(r, g, b, a)`.
+ * @public
+ * @example
+ * ```ts
+ * import { hexToRgba } from '@web-react-player/ui';
+ *
+ * hexToRgba('#ffffff', 0.5); // 'rgba(255, 255, 255, 0.5)'
+ * hexToRgba('#000', 1); // 'rgba(0, 0, 0, 1)'
+ * ```
+ */
 export function hexToRgba(hex: string, alpha: number): string {
   const cleanHex = hex.replace('#', '');
   const r = Number.parseInt(cleanHex.substring(0, 2), 16) || 0;
@@ -33,9 +51,28 @@ export function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Transform caption preferences into a fixed set of root CSS variables. The
-// <Captions /> renderer and the Live Preview Box both read these variables, so
-// changing the style never re-renders the subtitle tree.
+/**
+ * Преобразует параметры оформления субтитров в набор CSS-переменных для корневого узла.
+ *
+ * Результат применяется к корневому контейнеру плеера, и рендерер
+ * `<Captions />` вместе с предпросмотром читают именно эти переменные.
+ * Благодаря этому изменение стиля не перестраивает дерево субтитров.
+ *
+ * Базовый кегль равен 15 px; процент из `fontSize` пересчитывается
+ * в абсолютный размер.
+ *
+ * @param styles - Настройки стилизации субтитров.
+ * @returns Объект пар CSS-переменных и их значений.
+ * @public
+ * @example
+ * ```ts
+ * import { captionStylesToCssVariables, DEFAULT_CAPTION_STYLES } from '@web-react-player/ui';
+ *
+ * const vars = captionStylesToCssVariables({ ...DEFAULT_CAPTION_STYLES, fontSize: '150%' });
+ * // { '--player-cue-font-size': '23px', '--player-cue-color': '#ffffff', ... }
+ * rootElement.style.setProperty('--player-cue-color', vars['--player-cue-color'] ?? '#fff');
+ * ```
+ */
 export function captionStylesToCssVariables(
   styles: CaptionStylePreferences,
 ): Record<string, string> {
@@ -52,6 +89,23 @@ export function captionStylesToCssVariables(
   };
 }
 
+/**
+ * Загружает сохранённые настройки субтитров из `localStorage`.
+ *
+ * Отсутствующие в хранилище поля заполняются значениями
+ * {@link DEFAULT_CAPTION_STYLES}. При недоступном `localStorage`
+ * (SSR, приватный режим, переполнение квоты) возвращаются умолчания.
+ *
+ * @returns Актуальный объект параметров стиля субтитров.
+ * @public
+ * @example
+ * ```ts
+ * import { loadCaptionPreferences } from '@web-react-player/ui';
+ *
+ * const styles = loadCaptionPreferences();
+ * console.log(styles.fontFamily);
+ * ```
+ */
 export function loadCaptionPreferences(): CaptionStylePreferences {
   if (typeof window === 'undefined') return DEFAULT_CAPTION_STYLES;
   try {
@@ -64,6 +118,22 @@ export function loadCaptionPreferences(): CaptionStylePreferences {
   }
 }
 
+/**
+ * Сохраняет пользовательские параметры стилизации субтитров в `localStorage`.
+ *
+ * Ошибки квоты и приватного режима подавляются: сброс сохранения
+ * не должен ломать плеер.
+ *
+ * @param styles - Объект настроек субтитров.
+ * @public
+ * @example
+ * ```ts
+ * import { loadCaptionPreferences, saveCaptionPreferences } from '@web-react-player/ui';
+ *
+ * const next = { ...loadCaptionPreferences(), fontSize: '150%' };
+ * saveCaptionPreferences(next);
+ * ```
+ */
 export function saveCaptionPreferences(styles: CaptionStylePreferences): void {
   if (typeof window === 'undefined') return;
   try {

@@ -4,13 +4,109 @@ import { usePlayerContext } from '../context/PlayerContext';
 import { compileHotkeyBindings, handleKeyboardShortcut } from '../hotkeys/dispatcher';
 import type { HotkeysMap } from '../hotkeys/types';
 
+/**
+ * Свойства корневого контейнера плеера {@link Root}.
+ *
+ * Наследует все нативные атрибуты `<div>`, включая `ref` и
+ * `onPointerMove`/`onPointerLeave`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <Root keyboardShortcuts hotkeys={{ k: 'togglePlay' }} idleTimeout={2000}>
+ *   <video src="/media/movie.mp4" />
+ * </Root>
+ * ```
+ */
 export interface RootProps extends ComponentProps<'div'> {
+  /**
+   * Включить глобальные горячие клавиши на уровне `document`.
+   *
+   * Слушатель игнорирует нажатия в редактируемых полях и на кнопках,
+   * чтобы сохранить нативное поведение `Space`/`Enter`.
+   *
+   * @defaultValue `true`
+   * @example
+   * ```tsx
+   * <Root keyboardShortcuts={false}>...</Root>
+   * ```
+   */
   keyboardShortcuts?: boolean;
+  /**
+   * Пользовательские переопределения горячих клавиш.
+   *
+   * Имеют приоритет над встроенной раскладкой {@link DEFAULT_HOTKEYS}.
+   *
+   * @example
+   * ```tsx
+   * <Root hotkeys={{ q: 'toggleMute', r: 'seekTo10' }}>...</Root>
+   * ```
+   */
   hotkeys?: HotkeysMap;
+  /**
+   * Задержка в миллисекундах до автоматического скрытия элементов управления.
+   *
+   * Таймер запускается только во время воспроизведения и при отсутствии
+   * перетаскивания таймлайна.
+   *
+   * @defaultValue `2500`
+   * @example
+   * ```tsx
+   * <Root idleTimeout={4000}>...</Root>
+   * ```
+   */
   idleTimeout?: number;
+  /**
+   * Ширина в пикселях, ниже которой включается компактная раскладка.
+   *
+   * Публикуется в атрибутах `data-sm` и `data-lg` для CSS-стилей.
+   *
+   * @defaultValue `580`
+   * @example
+   * ```tsx
+   * <Root smallWhenWidth={480}>...</Root>
+   * ```
+   */
   smallWhenWidth?: number;
 }
 
+/**
+ * Корневой контейнер плеера.
+ *
+ * Отвечает за всё, что не относится к содержимому: сборку и обработку
+ * горячих клавиш, автоматическое скрытие контролов по простою, адаптивную
+ * раскладку через `ResizeObserver`, синхронизацию нативных событий
+ * полноэкранного режима с FSM, публикацию метрик плеера в CSS-переменные
+ * (`--player-time-progress`, `--player-buffered`, `--player-volume`) и
+ * каскад CSS-переменных со стилями субтитров.
+ *
+ * На корневой элемент выставляются `data-` атрибуты состояния
+ * (`data-status`, `data-playing`, `data-paused`, `data-muted`,
+ * `data-fullscreen`, `data-theater`, `data-sm`/`data-lg`,
+ * `data-controls-visible`/`data-controls-hidden`), что позволяет стилизовать
+ * плеер снаружи без React.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { Html5VideoProvider, PlayButton, Root, TimeSlider } from '@web-react-player/ui';
+ *
+ * export function Player() {
+ *   return (
+ *     <Root className="my-player" idleTimeout={3000}>
+ *       <Html5VideoProvider src="/media/movie.mp4" />
+ *       <PlayButton />
+ *       <TimeSlider />
+ *     </Root>
+ *   );
+ * }
+ * ```
+ *
+ * @example Пользовательские горячие клавиши
+ * ```tsx
+ * <Root hotkeys={{ q: 'toggleMute', 'Shift+P': 'togglePlay' }}>...</Root>
+ * ```
+ */
 export function Root({
   ref,
   children,

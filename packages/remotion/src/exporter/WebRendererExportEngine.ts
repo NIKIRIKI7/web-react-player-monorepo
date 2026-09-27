@@ -8,9 +8,58 @@ import type {
   RemotionCompositionConfig,
 } from '../types';
 
+/**
+ * Движок экспорта, работающий целиком в браузере через WebCodecs.
+ *
+ * Рендеринг выполняется пакетом `@remotion/web-renderer`: компонент сначала
+ * оборачивается плагинами из {@link RemotionPluginManager}, затем
+ * кодируется в контейнер `mp4` или `webm`. Прогресс рендеринга транслируется
+ * одновременно в колбэк из {@link ExportOptions} и в плагины.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { createDefaultRemotionSuite } from '@web-react-player/remotion';
+ *
+ * const { exporter } = createDefaultRemotionSuite();
+ * const result = await exporter.exportMedia(Composition, config, { title: 'Ролик' }, {
+ *   format: 'mp4',
+ *   quality: 'high',
+ *   onProgress: ({ progress }) => console.log(Math.round(progress * 100)),
+ * });
+ * result.download('video.mp4');
+ * ```
+ */
 export class WebRendererExportEngine implements IExportEngine {
+  /**
+   * Создаёт движок экспорта.
+   *
+   * @param pluginManager - Менеджер плагинов, применяемых к компоненту перед рендерингом.
+   * @public
+   * @example
+   * ```ts
+   * const { pluginManager, exporter } = createDefaultRemotionSuite();
+   * ```
+   */
   constructor(private pluginManager: RemotionPluginManager) {}
 
+  /**
+   * Проверяет, возможен ли рендеринг в текущем окружении.
+   *
+   * В SSR возвращается отказ, поскольку WebCodecs недоступен на сервере. В
+   * браузере проверяется поддержка `VideoEncoder` и, если доступен
+   * `@remotion/web-renderer`, запрашивается реальная проверка под целевое
+   * разрешение кадра.
+   *
+   * @param config - Частичная конфигурация; размеры по умолчанию 1920x1080.
+   * @returns Признак возможности рендеринга и причина отказа, если она есть.
+   * @public
+   * @example
+   * ```ts
+   * const { canRender, reason } = await exporter.canExport({ width: 3840, height: 2160 });
+   * if (!canRender) console.warn(reason);
+   * ```
+   */
   public async canExport(
     config?: Partial<RemotionCompositionConfig>,
   ): Promise<{ canRender: boolean; reason?: string }> {
@@ -41,6 +90,18 @@ export class WebRendererExportEngine implements IExportEngine {
     }
   }
 
+  /**
+   * Возвращает список видеокодеков, доступных в браузере.
+   *
+   * При недоступности `@remotion/web-renderer` предполагается `h264`.
+   *
+   * @returns Массив имён кодеков.
+   * @public
+   * @example
+   * ```ts
+   * console.log(await exporter.getAvailableCodecs()); // ['h264', 'vp8', 'vp9']
+   * ```
+   */
   public async getAvailableCodecs(): Promise<string[]> {
     try {
       const webRenderer = await import('@remotion/web-renderer');
@@ -54,6 +115,30 @@ export class WebRendererExportEngine implements IExportEngine {
     }
   }
 
+  /**
+   * Рендерит и кодирует композицию в видеофайл.
+   *
+   * Пресет качества переводится в конкретные битрейты, но явные значения
+   * `videoBitrate` и `audioBitrate` имеют приоритет.
+   *
+   * @param Component - Корневой компонент композиции.
+   * @param config - Полная конфигурация композиции.
+   * @param inputProps - Пропсы композиции.
+   * @param options - Формат, кодек, качество и обработчик прогресса.
+   * @returns Файл вместе со ссылкой и методом скачивания.
+   * @throws Если рендеринг в текущем окружении невозможен.
+   * @public
+   * @example
+   * ```ts
+   * const result = await exporter.exportMedia(
+   *   Composition,
+   *   { durationInFrames: 300, fps: 30, width: 1920, height: 1080 },
+   *   { title: 'Ролик' },
+   *   { format: 'webm', videoCodec: 'vp9', quality: 'draft' },
+   * );
+   * result.download('draft.webm');
+   * ```
+   */
   public async exportMedia(
     Component: React.ComponentType<Record<string, unknown>>,
     config: RemotionCompositionConfig,

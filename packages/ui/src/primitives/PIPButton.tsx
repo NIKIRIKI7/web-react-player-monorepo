@@ -1,8 +1,34 @@
 import type { ComponentProps } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства кнопки Picture-in-Picture.
+ *
+ * Наследует все нативные атрибуты `<button>`, включая `ref` и `onClick`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <PIPButton className="pip" />
+ * ```
+ */
 export interface PIPButtonProps extends ComponentProps<'button'> {}
 
+/**
+ * Кнопка переключения режима «картинка в картинке».
+ *
+ * Вызывает `actions.togglePIP()` и отражает текущее состояние
+ * `context.pip` в `aria-pressed` и атрибуте `data-pip`. Текст по умолчанию —
+ * `PiP`, но его можно заменить через `children`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { PIPButton } from '@web-react-player/ui';
+ *
+ * <PIPButton>{'Окно'}</PIPButton>
+ * ```
+ */
 export function PIPButton({ ref, children, onClick, ...props }: PIPButtonProps) {
   const { state, actions } = usePlayerContext();
 

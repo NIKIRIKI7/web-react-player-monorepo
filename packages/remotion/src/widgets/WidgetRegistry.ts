@@ -3,14 +3,59 @@ import type { ITsxCompiler, RemotionCompositionConfig } from '../compositionConf
 import type { VidoraWidgetDefinition, VidoraWidgetPackage } from './types';
 import { WidgetPropsEngine } from './WidgetPropsEngine';
 
+/**
+ * Реестр виджетов Vidora с ленивой компиляцией TSX.
+ *
+ * Реестр принимает JSON-пакеты, отдельные определения или JSON-строки,
+ * компилирует компонент виджета только по требованию и кэширует результат.
+ * Если TSX-код виджета изменился, кэш сбрасывается автоматически.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { createDefaultRemotionSuite, type VidoraWidgetDefinition } from '@web-react-player/remotion';
+ *
+ * const { widgetRegistry } = createDefaultRemotionSuite();
+ * const widget: VidoraWidgetDefinition = {
+ *   id: 'lower-third',
+ *   name: 'Lower Third',
+ *   tsx_code: 'export const C = ({ title }) => <div>{title}</div>;',
+ * };
+ *
+ * widgetRegistry.register(widget);
+ * const Widget = await widgetRegistry.compile('lower-third');
+ * ```
+ */
 export class WidgetRegistry {
   private widgets = new Map<string, VidoraWidgetDefinition>();
   private componentCache = new Map<string, React.ComponentType<Record<string, unknown>>>();
 
+  /**
+   * Создаёт реестр.
+   *
+   * @param compiler - Компилятор, используемый для сборки TSX виджетов.
+   * @public
+   * @example
+   * ```ts
+   * const { compiler, widgetRegistry } = createDefaultRemotionSuite();
+   * ```
+   */
   constructor(private compiler: ITsxCompiler) {}
 
   /**
    * Регистрирует JSON-пакет, отдельный виджет или JSON-строку
+   *
+   * @param input - Пакет, определение виджета или JSON-строка с ними.
+   * @returns Массив успешно зарегистрированных определений.
+   * @throws Если JSON не разбирается, формат некорректен либо у виджета
+   * отсутствует строковый `id` или `tsx_code`.
+   * @public
+   * @example
+   * ```ts
+   * registry.register(widgetPackage);
+   * registry.register(widgetDefinition);
+   * registry.register(JSON.stringify(widgetDefinition));
+   * ```
    */
   public register(
     input: VidoraWidgetPackage | VidoraWidgetDefinition | string,
@@ -67,20 +112,62 @@ export class WidgetRegistry {
     this.widgets.set(widget.id, widget);
   }
 
+  /**
+   * Возвращает определение виджета по идентификатору.
+   *
+   * @param id - Идентификатор виджета.
+   * @returns Определение виджета либо `undefined`, если оно не зарегистрировано.
+   * @public
+   * @example
+   * ```ts
+   * const widget = registry.get('lower-third');
+   * ```
+   */
   public get(id: string): VidoraWidgetDefinition | undefined {
     return this.widgets.get(id);
   }
 
+  /**
+   * Возвращает все зарегистрированные виджеты.
+   *
+   * @returns Массив определений в порядке регистрации.
+   * @public
+   * @example
+   * ```ts
+   * registry.getAll().forEach((w) => console.log(w.name));
+   * ```
+   */
   public getAll(): VidoraWidgetDefinition[] {
     return Array.from(this.widgets.values());
   }
 
+  /**
+   * Возвращает виджеты указанной категории.
+   *
+   * @param category - Имя категории.
+   * @returns Отфильтрованный массив определений.
+   * @public
+   * @example
+   * ```ts
+   * const textWidgets = registry.getByCategory('text');
+   * ```
+   */
   public getByCategory(category: string): VidoraWidgetDefinition[] {
     return this.getAll().filter((w) => w.category === category);
   }
 
   /**
    * Компилирует виджет единожды и возвращает React-компонент из кэша
+   *
+   * @param idOrWidget - Идентификатор или само определение виджета.
+   * @returns Скомпилированный компонент виджета.
+   * @throws Если виджет не найден в реестре.
+   * @public
+   * @example
+   * ```ts
+   * const Widget = await registry.compile('lower-third');
+   * <Widget title="Эпизод 1" />
+   * ```
    */
   public async compile(
     idOrWidget: string | VidoraWidgetDefinition,
@@ -108,6 +195,19 @@ export class WidgetRegistry {
 
   /**
    * Нормализует пропсы пользователя
+   *
+   * Значения по умолчанию подставляются, типы приводятся к ожидаемым,
+   * а неизвестные ключи удаляются.
+   *
+   * @param idOrWidget - Идентификатор или само определение виджета.
+   * @param userProps - Пропсы, заданные пользователем.
+   * @returns Нормализованные пропсы; для неизвестного виджета возвращаются
+   * исходные значения без изменений.
+   * @public
+   * @example
+   * ```ts
+   * const props = registry.normalizeProps('lower-third', { title: 'Ролик' });
+   * ```
    */
   public normalizeProps(
     idOrWidget: string | VidoraWidgetDefinition,
@@ -120,6 +220,19 @@ export class WidgetRegistry {
 
   /**
    * Извлекает конфигурацию композиции
+   *
+   * На основе схемы свойств и нормализованных значений выводит длительность
+   * и размеры кадра, объявленные виджетом.
+   *
+   * @param idOrWidget - Идентификатор или само определение виджета.
+   * @param userProps - Пропсы, заданные пользователем.
+   * @returns Частичная конфигурация композиции; для неизвестного виджета —
+   * пустой объект.
+   * @public
+   * @example
+   * ```ts
+   * const config = registry.getWidgetConfig('lower-third', { durationInFrames: 150 });
+   * ```
    */
   public getWidgetConfig(
     idOrWidget: string | VidoraWidgetDefinition,
@@ -131,6 +244,18 @@ export class WidgetRegistry {
     return WidgetPropsEngine.deriveCompositionConfig(widget, normalized);
   }
 
+  /**
+   * Очищает кэш скомпилированных компонентов.
+   *
+   * Определения виджетов при этом сохраняются.
+   *
+   * @public
+   * @example
+   * ```ts
+   * registry.clearCache();
+   * const Widget = await registry.compile('lower-third'); // пересборка
+   * ```
+   */
   public clearCache(): void {
     this.componentCache.clear();
   }

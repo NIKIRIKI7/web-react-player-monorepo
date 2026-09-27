@@ -2,7 +2,28 @@ import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства отладочного оверлея {@link PlayerDebug}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <PlayerDebug enabled={import.meta.env.DEV} />
+ * ```
+ */
 export interface PlayerDebugProps {
+  /**
+   * Показывать ли оверлей.
+   *
+   * Рекомендуется управлять значением через флаг окружения, чтобы панель
+   * никогда не попадала в production-сборку.
+   *
+   * @defaultValue `true`
+   * @example
+   * ```tsx
+   * <PlayerDebug enabled={false} />
+   * ```
+   */
   enabled?: boolean;
 }
 
@@ -27,6 +48,33 @@ const PANEL_STYLE: CSSProperties = {
 
 // Developer overlay with live FSM state. Render it only in development setups —
 // pass `enabled` to gate it (e.g. by an env flag) so it never ships to users.
+/**
+ * Отладочный оверлей с живым состоянием FSM.
+ *
+ * Рендерится порталом в `document.body` поверх всей страницы и выводит
+ * статус, позицию, громкость, скорость, режим фона, причину умной паузы,
+ * активный маркер и тип указателя. Компонент ничего не отрисовывает на сервере
+ * и при `enabled={false}`, а также прячет вывод при `pointer: coarse`.
+ *
+ * Рекомендуется использовать только в dev-окружении.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { PlayerDebug, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * export function App() {
+ *   return (
+ *     <PlayerProvider>
+ *       <Root>
+ *         <video src="/media/movie.mp4" />
+ *       </Root>
+ *       <PlayerDebug enabled={import.meta.env.DEV} />
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ */
 export function PlayerDebug({ enabled = true }: PlayerDebugProps) {
   const { state } = usePlayerContext();
   if (!enabled || typeof window === 'undefined') return null;

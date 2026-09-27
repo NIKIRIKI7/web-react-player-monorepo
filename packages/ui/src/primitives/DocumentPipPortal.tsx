@@ -2,9 +2,50 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 
+/**
+ * Свойства портала «картинка в картинке» уровня документа.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <DocumentPipPortal width={960} height={540}>
+ *   <Root>...</Root>
+ * </DocumentPipPortal>
+ * ```
+ */
 export interface DocumentPipPortalProps {
+  /**
+   * Поддерево плеера, переносимое в отдельное окно.
+   *
+   * @example
+   * ```tsx
+   * <DocumentPipPortal>
+   *   <Root>
+   *     <Html5VideoProvider src="/media/movie.mp4" />
+   *   </Root>
+   * </DocumentPipPortal>
+   * ```
+   */
   children: ReactNode;
+  /**
+   * Ширина запрошенного окна в пикселях.
+   *
+   * @defaultValue `720`
+   * @example
+   * ```tsx
+   * <DocumentPipPortal width={1024} />
+   * ```
+   */
   width?: number;
+  /**
+   * Высота запрошенного окна в пикселях.
+   *
+   * @defaultValue `405`
+   * @example
+   * ```tsx
+   * <DocumentPipPortal height={576} />
+   * ```
+   */
   height?: number;
 }
 
@@ -49,6 +90,30 @@ function stylePipBody(pipWindow: Window) {
 // Moves the WHOLE player (video + overlays) into the Document Picture-in-Picture
 // window when the "documentPip" context flag is enabled. The main window keeps a
 // placeholder with a "Return to Page" button instead of the player.
+/**
+ * Переносит весь плеер (видео и оверлеи) в окно Document Picture-in-Picture,
+ * когда включён флаг `context.documentPip`.
+ *
+ * В основном окне вместо плеера остаётся заглушка с кнопкой «Вернуться на
+ * страницу». Стили копируются в окно PiP клонированием узлов `<style>` и
+ * `<link>`, а `body` растягивается на весь вьюпорт, чтобы портированный
+ * плеер корректно занял окно. Если браузер не поддерживает API, компонент
+ * оставляет плеер на месте.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { DocumentPipPortal, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <DocumentPipPortal>
+ *     <Root>
+ *       <video src="/media/movie.mp4" />
+ *     </Root>
+ *   </DocumentPipPortal>
+ * </PlayerProvider>
+ * ```
+ */
 export function DocumentPipPortal({ children, width = 720, height = 405 }: DocumentPipPortalProps) {
   const { actions, send } = usePlayerContext();
   const isActive = usePlayerState((s) => s.context.documentPip);

@@ -9,27 +9,21 @@ import { Chapter } from '@web-react-player/core';
 import { default as default_2 } from 'react';
 import { Marker } from '@web-react-player/core';
 
-// @public (undocumented)
+// @public
 export interface AudioMixConfig {
-    // (undocumented)
     music?: AudioTrackMusic[];
-    // (undocumented)
     sfx?: AudioTrackSFX[];
-    // (undocumented)
     voiceover?: AudioTrackVoiceover;
 }
 
 // @public
 export class AudioMixerPlugin implements IRemotionPlugin {
-    // (undocumented)
     readonly id = "remotion-plugin-audio-mixer";
-    // (undocumented)
     readonly name = "Cinematic Audio Mixer";
-    // (undocumented)
     wrapComponent(Component: default_2.ComponentType<Record<string, unknown>>, config: RemotionCompositionConfig): default_2.ComponentType<Record<string, unknown>>;
 }
 
-// @public (undocumented)
+// @public
 export interface AudioTrackMusic extends BaseAudioTrack {
     ducking?: boolean;
     fadeInFrames?: number;
@@ -37,11 +31,11 @@ export interface AudioTrackMusic extends BaseAudioTrack {
     loop?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export interface AudioTrackSFX extends BaseAudioTrack {
 }
 
-// @public (undocumented)
+// @public
 export interface AudioTrackVoiceover extends BaseAudioTrack {
 }
 
@@ -56,25 +50,22 @@ export interface BaseAudioTrack {
     volume?: number;
 }
 
-// @public (undocumented)
+// @public
 export class BrowserTsxCompiler implements ITsxCompiler {
     constructor(pluginManager: RemotionPluginManager);
-    // (undocumented)
     compile(code: string, assets?: Record<string, string>, additionalScope?: Record<string, unknown>, options?: RemotionCompilerOptions): Promise<{
         Component: default_2.ComponentType<Record<string, unknown>>;
         detectedConfig?: Partial<RemotionCompositionConfig>;
     }>;
 }
 
-// @public (undocumented)
+// @public
 export interface CompilerError extends Error {
-    // (undocumented)
     suggestion?: string | undefined;
-    // (undocumented)
     type: 'SyntaxError' | 'MissingComponentError' | 'InvalidConfigError' | 'RuntimeError';
 }
 
-// @public (undocumented)
+// @public
 export function createDefaultRemotionSuite(customCss?: string): {
     pluginManager: RemotionPluginManager;
     compiler: BrowserTsxCompiler;
@@ -82,249 +73,169 @@ export function createDefaultRemotionSuite(customCss?: string): {
     widgetRegistry: WidgetRegistry;
 };
 
-// @public (undocumented)
+// @public
 export interface ExportOptions {
-    // (undocumented)
     audioBitrate?: number;
-    // (undocumented)
     audioCodec?: string;
-    // (undocumented)
     fileName?: string;
-    // (undocumented)
     format?: 'mp4' | 'webm';
-    // (undocumented)
     onProgress?: (progress: ExportProgressData) => void;
-    // (undocumented)
     quality?: 'draft' | 'standard' | 'high';
-    // (undocumented)
     videoBitrate?: number;
-    // (undocumented)
     videoCodec?: 'h264' | 'vp8' | 'vp9';
 }
 
-// @public (undocumented)
+// @public
 export interface ExportProgressData {
-    // (undocumented)
     encodedFrames: number;
-    // (undocumented)
     progress: number;
-    // (undocumented)
     renderedFrames: number;
-    // (undocumented)
     totalFrames: number;
 }
 
-// @public (undocumented)
+// @public
 export interface ExportResult {
-    // (undocumented)
     blob: Blob;
-    // (undocumented)
     buffer: ArrayBuffer | Uint8Array;
-    // (undocumented)
     download: (fileName?: string) => void;
-    // (undocumented)
     url: string;
 }
 
-// @public (undocumented)
+// @public
 export interface IExportEngine {
-    // (undocumented)
     canExport(config?: Partial<RemotionCompositionConfig>): Promise<{
         canRender: boolean;
         reason?: string;
     }>;
-    // (undocumented)
     exportMedia(Component: default_2.ComponentType<Record<string, unknown>>, config: RemotionCompositionConfig, inputProps: Record<string, unknown>, options?: ExportOptions): Promise<ExportResult>;
-    // (undocumented)
     getAvailableCodecs(): Promise<string[]>;
 }
 
-// @public (undocumented)
+// @public
 export interface IRemotionPlugin {
-    // (undocumented)
     dispose?: () => void;
-    // (undocumented)
     readonly id: string;
-    // (undocumented)
     readonly name: string;
-    // (undocumented)
     onExportProgress?: (progress: ExportProgressData) => void;
-    // (undocumented)
     preflight?: (context: PluginPreflightContext) => Promise<void>;
-    // (undocumented)
     resolveImports?: (moduleName: string) => Record<string, unknown> | null | undefined;
-    // (undocumented)
     transformSource?: (code: string) => string;
-    // (undocumented)
     readonly version?: string;
-    // (undocumented)
     wrapComponent?: (Component: default_2.ComponentType<Record<string, unknown>>, config: RemotionCompositionConfig) => default_2.ComponentType<Record<string, unknown>>;
 }
 
-// @public (undocumented)
+// @public
 export interface ITsxCompiler {
-    // (undocumented)
     compile(code: string, assets?: Record<string, string>, virtualScope?: Record<string, unknown>, options?: RemotionCompilerOptions): Promise<{
         Component: default_2.ComponentType<Record<string, unknown>>;
         detectedConfig?: Partial<RemotionCompositionConfig>;
     }>;
 }
 
-// @public (undocumented)
+// @public
 export class LucideIconsPlugin implements IRemotionPlugin {
-    // (undocumented)
     readonly id = "remotion-plugin-lucide";
-    // (undocumented)
     readonly name = "Lucide Icons Provider";
-    // (undocumented)
     resolveImports(moduleName: string): Record<string, unknown> | null;
 }
 
-// @public (undocumented)
+// @public
 export interface MasteringConfig {
-    // (undocumented)
     applyNoiseGate: boolean;
-    // (undocumented)
     lufsTarget: number;
-    // (undocumented)
     removeSilence: boolean;
-    // (undocumented)
     videoQuality: 'draft' | 'standard' | 'high';
 }
 
-// @public (undocumented)
+// @public
 export function parseScenario(markdown: string, whisperXData?: ReadonlyArray<ScenarioCaptionInput>, options?: ScenarioParseOptions): VidoraScenarioData;
 
-// @public (undocumented)
+// @public
 export interface PluginPreflightContext {
-    // (undocumented)
     config: RemotionCompositionConfig;
-    // (undocumented)
     inputProps: Record<string, unknown>;
-    // (undocumented)
     signal?: AbortSignal;
 }
 
-// @public (undocumented)
+// @public
 export type RemotionAssetResolver = (assetPath: string, assets: Record<string, string>) => string | null | undefined;
 
-// @public (undocumented)
+// @public
 export class RemotionCompilerError extends Error implements CompilerError {
     constructor(type: CompilerError['type'], message: string, suggestion?: string);
-    // (undocumented)
     readonly suggestion?: string | undefined;
-    // (undocumented)
     readonly type: CompilerError['type'];
 }
 
-// @public (undocumented)
+// @public
 export interface RemotionCompilerOptions {
-    // (undocumented)
     allowedAssetProtocols?: readonly string[];
-    // (undocumented)
     assetBaseUrl?: string;
-    // (undocumented)
     assetResolver?: RemotionAssetResolver;
-    // (undocumented)
     virtualModules?: Record<string, unknown>;
 }
 
-// @public (undocumented)
+// @public
 export interface RemotionCompositionConfig {
-    // (undocumented)
     audioMix?: AudioMixConfig;
-    // (undocumented)
     durationInFrames: number;
-    // (undocumented)
     fps: number;
-    // (undocumented)
     height: number;
-    // (undocumented)
     width: number;
 }
 
-// @public (undocumented)
+// @public
 export const RemotionPlaybackAdapter: default_2.FC<RemotionPlaybackAdapterProps>;
 
-// @public (undocumented)
+// @public
 export interface RemotionPlaybackAdapterProps {
-    // (undocumented)
     className?: string | undefined;
-    // (undocumented)
     compiler: ITsxCompiler;
-    // (undocumented)
     currentTime: number;
-    // (undocumented)
     defaultConfig?: RemotionCompositionConfig | undefined;
-    // (undocumented)
     fsmStatus: string;
-    // (undocumented)
     muted: boolean;
-    // (undocumented)
     onError: (error: Error) => void;
-    // (undocumented)
     onMetadataLoaded: (duration: number, fps: number) => void;
-    // (undocumented)
     onPlaybackStateChange: (isPlaying: boolean) => void;
-    // (undocumented)
     onTimeUpdate: (seconds: number) => void;
-    // (undocumented)
     playbackRate: number;
-    // (undocumented)
     pluginManager: RemotionPluginManager;
-    // (undocumented)
     source: RemotionSource;
-    // (undocumented)
     style?: default_2.CSSProperties | undefined;
-    // (undocumented)
     volume: number;
 }
 
-// @public (undocumented)
+// @public
 export class RemotionPluginManager {
-    // (undocumented)
     applyComponentWrappers(Component: default_2.ComponentType<Record<string, unknown>>, config: RemotionCompositionConfig): default_2.ComponentType<Record<string, unknown>>;
-    // (undocumented)
     applySourceTransforms(sourceCode: string): string;
-    // (undocumented)
     disposeAll(): void;
-    // (undocumented)
     getPlugins(): IRemotionPlugin[];
-    // (undocumented)
     notifyExportProgress(progress: ExportProgressData): void;
-    // (undocumented)
     register(plugin: IRemotionPlugin): this;
-    // (undocumented)
     resolveVirtualModule(moduleName: string): Record<string, unknown> | null;
-    // (undocumented)
     runPreflightAll(context: PluginPreflightContext): Promise<void>;
-    // (undocumented)
     unregister(pluginId: string): boolean;
 }
 
-// @public (undocumented)
+// @public
 export function RemotionProvider(input: RemotionProviderProps): default_2.JSX.Element;
 
-// @public (undocumented)
+// @public
 export interface RemotionProviderProps {
-    // (undocumented)
     className?: string;
-    // (undocumented)
     compiler: ITsxCompiler;
-    // (undocumented)
     config?: RemotionCompositionConfig;
-    // (undocumented)
     pluginManager: RemotionPluginManager;
-    // (undocumented)
     source: RemotionSource;
-    // (undocumented)
     style?: default_2.CSSProperties;
 }
 
-// @public (undocumented)
+// @public
 export type RemotionSource = {
-    type: 'component';
     component: default_2.ComponentType<Record<string, unknown>>;
+    type: 'component';
     inputProps?: Record<string, unknown>;
     config?: Partial<RemotionCompositionConfig>;
 } | {
@@ -345,224 +256,160 @@ export type RemotionSource = {
     config?: Partial<RemotionCompositionConfig>;
 };
 
-// @public (undocumented)
+// @public
 export const ScenarioAdapter: {
     parse: typeof parseScenario;
     timeToSeconds: typeof scenarioTimeToSeconds;
 };
 
-// @public (undocumented)
+// @public
 export type ScenarioCaptionInput = CaptionCue | WhisperCaptionCue;
 
-// @public (undocumented)
+// @public
 export interface ScenarioParseOptions {
-    // (undocumented)
     captions?: ReadonlyArray<ScenarioCaptionInput>;
-    // (undocumented)
     duration?: number;
-    // (undocumented)
     markers?: ReadonlyArray<Marker>;
 }
 
-// @public (undocumented)
+// @public
 export function scenarioTimeToSeconds(value: string): number | null;
 
-// @public (undocumented)
+// @public
 export class TailwindPlugin implements IRemotionPlugin {
     constructor(customCss?: string);
-    // (undocumented)
     readonly id = "remotion-plugin-tailwind";
-    // (undocumented)
     readonly name = "Tailwind Scoped Styles";
-    // (undocumented)
     wrapComponent(Component: default_2.ComponentType<Record<string, unknown>>, config: RemotionCompositionConfig): default_2.ComponentType<Record<string, unknown>>;
 }
 
-// @public (undocumented)
+// @public
 export class ThreePlugin implements IRemotionPlugin {
-    // (undocumented)
     dispose(): void;
-    // (undocumented)
     readonly id = "remotion-plugin-three";
-    // (undocumented)
     readonly name = "Three.js & 3D Objects Support";
-    // (undocumented)
     preflight(_context: PluginPreflightContext): Promise<void>;
-    // (undocumented)
     registerInstance(instance: {
         dispose?: () => void;
     }): void;
-    // (undocumented)
     resolveImports(moduleName: string): Record<string, unknown> | null;
 }
 
-// @public (undocumented)
+// @public
 export class VidoraFFmpegService {
     constructor(options?: VidoraFFmpegServiceOptions);
-    // (undocumented)
     cancel(jobId: string, signal?: AbortSignal | undefined): Promise<void>;
-    // (undocumented)
     startPipeline(scenarioId: string, config: MasteringConfig, onProgress?: (progress: VidoraRenderProgress) => void, signal?: AbortSignal | undefined): Promise<string>;
 }
 
-// @public (undocumented)
+// @public
 export interface VidoraFFmpegServiceOptions {
-    // (undocumented)
     apiUrl?: string | undefined;
-    // (undocumented)
     createEventSource?: ((url: string) => EventSource) | undefined;
-    // (undocumented)
     fetch?: typeof globalThis.fetch | undefined;
-    // (undocumented)
     headers?: HeadersInit | undefined;
-    // (undocumented)
     signal?: AbortSignal | undefined;
 }
 
-// @public (undocumented)
+// @public
 export interface VidoraRenderProgress extends ExportProgressData {
-    // (undocumented)
     downloadUrl?: string;
-    // (undocumented)
     message?: string;
-    // (undocumented)
     status: VidoraRenderStatus;
 }
 
-// @public (undocumented)
+// @public
 export type VidoraRenderStatus = 'processing' | 'completed' | 'error';
 
-// @public (undocumented)
+// @public
 export interface VidoraScenarioData {
-    // (undocumented)
     captions: CaptionCue[];
-    // (undocumented)
     chapters: Chapter[];
-    // (undocumented)
     markers: Marker[];
-    // (undocumented)
     title: string;
 }
 
-// @public (undocumented)
+// @public
 export interface VidoraWidgetDefinition {
-    // (undocumented)
     category?: string;
-    // (undocumented)
     default_props?: Record<string, unknown>;
-    // (undocumented)
     description?: string;
-    // (undocumented)
     example_snippet?: string;
-    // (undocumented)
     id: string;
-    // (undocumented)
     import_path?: string;
-    // (undocumented)
     is_custom?: boolean;
-    // (undocumented)
     name: string;
-    // (undocumented)
     props?: VidoraWidgetProp[];
-    // (undocumented)
     tags?: string[];
-    // (undocumented)
     tsx_code: string;
 }
 
-// @public (undocumented)
+// @public
 export interface VidoraWidgetPackage {
-    // (undocumented)
     exported_at?: string;
-    // (undocumented)
     generator?: string;
-    // (undocumented)
     vidora_schema_version?: string;
-    // (undocumented)
     widgets: VidoraWidgetDefinition[];
 }
 
-// @public (undocumented)
+// @public
 export interface VidoraWidgetProp {
-    // (undocumented)
     default?: unknown;
-    // (undocumented)
     description?: string;
-    // (undocumented)
     enum_values?: string[];
-    // (undocumented)
     name: string;
-    // (undocumented)
     required?: boolean;
-    // (undocumented)
     type: WidgetPropType;
 }
 
-// @public (undocumented)
+// @public
 export class WebRendererExportEngine implements IExportEngine {
     constructor(pluginManager: RemotionPluginManager);
-    // (undocumented)
     canExport(config?: Partial<RemotionCompositionConfig>): Promise<{
         canRender: boolean;
         reason?: string;
     }>;
-    // (undocumented)
     exportMedia(Component: default_2.ComponentType<Record<string, unknown>>, config: RemotionCompositionConfig, inputProps: Record<string, unknown>, options?: ExportOptions): Promise<ExportResult>;
-    // (undocumented)
     getAvailableCodecs(): Promise<string[]>;
 }
 
-// @public (undocumented)
+// @public
 export interface WhisperCaptionCue {
-    // (undocumented)
     end: number;
-    // (undocumented)
     id?: string;
-    // (undocumented)
     start: number;
-    // (undocumented)
     text: string;
-    // (undocumented)
     words?: WhisperWordCue[];
 }
 
-// @public (undocumented)
+// @public
 export interface WhisperWordCue {
-    // (undocumented)
     end: number;
-    // (undocumented)
     start: number;
-    // (undocumented)
     word: string;
 }
 
-// @public (undocumented)
+// @public
 export const WidgetPropsEngine: {
     normalizeProps(widget: VidoraWidgetDefinition, userProps?: Record<string, unknown>): Record<string, unknown>;
     coerceValue(propDef: VidoraWidgetProp, value: unknown): unknown;
     deriveCompositionConfig(widget: VidoraWidgetDefinition, normalizedProps?: Record<string, unknown>): Partial<RemotionCompositionConfig>;
 };
 
-// @public (undocumented)
+// @public
 export type WidgetPropType = 'string' | 'number' | 'boolean' | 'enum' | 'object';
 
-// @public (undocumented)
+// @public
 export class WidgetRegistry {
     constructor(compiler: ITsxCompiler);
-    // (undocumented)
     clearCache(): void;
     compile(idOrWidget: string | VidoraWidgetDefinition): Promise<default_2.ComponentType<Record<string, unknown>>>;
-    // (undocumented)
     get(id: string): VidoraWidgetDefinition | undefined;
-    // (undocumented)
     getAll(): VidoraWidgetDefinition[];
-    // (undocumented)
     getByCategory(category: string): VidoraWidgetDefinition[];
     getWidgetConfig(idOrWidget: string | VidoraWidgetDefinition, userProps?: Record<string, unknown>): Partial<RemotionCompositionConfig>;
     normalizeProps(idOrWidget: string | VidoraWidgetDefinition, userProps?: Record<string, unknown>): Record<string, unknown>;
     register(input: VidoraWidgetPackage | VidoraWidgetDefinition | string): VidoraWidgetDefinition[];
 }
-
-// (No @packageDocumentation comment for this package)
 
 ```

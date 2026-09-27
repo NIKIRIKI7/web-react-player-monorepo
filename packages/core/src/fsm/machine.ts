@@ -73,6 +73,47 @@ function findActiveMarker(markers: Marker[], time: number): Marker | null {
   return null;
 }
 
+/**
+ * Изолированный детерминированный конечный автомат (FSM) плеера.
+ *
+ * Ядро не зависит от React, DOM и любых внешних библиотек: экземпляр
+ * принимает события, применяет их к состоянию и уведомляет подписчиков
+ * только при фактическом изменении.
+ *
+ * Публичные методы объявлены стрелочными свойствами, поэтому их можно
+ * безопасно передавать как колбэки без потери контекста `this`.
+ *
+ * @public
+ * @example Базовый цикл воспроизведения
+ * ```ts
+ * import { PlayerMachine } from '@web-react-player/core';
+ *
+ * const machine = new PlayerMachine();
+ * machine.subscribe(({ status, context }) => {
+ *   console.log(status, context.currentTime);
+ * });
+ *
+ * machine.send({ type: 'LOAD', src: '/media/movie.mp4' });
+ * machine.send({ type: 'METADATA_LOADED', duration: 120 });
+ * machine.send({ type: 'PLAY' });
+ * ```
+ *
+ * @example Блокировка события через middleware
+ * ```ts
+ * const machine = new PlayerMachine();
+ * const remove = machine.use((event, _snapshot, next) => {
+ *   if (event.type === 'PLAY' && !isUserInitiated) return; // глотаем событие
+ *   next(event);
+ * });
+ * remove(); // снять middleware
+ * ```
+ *
+ * @example Восстановление сохранённых настроек
+ * ```ts
+ * const machine = new PlayerMachine();
+ * machine.send({ type: 'HYDRATE_SETTINGS', volume: 0.8, playbackRate: 1.5, ambientMode: false });
+ * ```
+ */
 export class PlayerMachine {
   private status: PlayerStatus = 'idle';
   private context: PlayerContext = { ...INITIAL_CONTEXT };
@@ -84,10 +125,40 @@ export class PlayerMachine {
     context: { ...this.context },
   };
 
+  /**
+   * Возвращает текущий снимок состояния плеера.
+   *
+   * Снимок иммутабелен и остаётся валидным после дальнейших событий.
+   *
+   * @returns Актуальный снимок состояния.
+   * @public
+   * @example
+   * ```ts
+   * const { status, context } = machine.getSnapshot();
+   * console.log(status, context.duration);
+   * ```
+   */
   public getSnapshot = (): PlayerSnapshot => {
     return this.snapshot;
   };
 
+  /**
+   * Подписывает функцию обратного вызова на изменение снимка.
+   *
+   * Подписчик вызывается только когда статус или контекст действительно
+   * изменились, поэтому лишних ререндеров не возникает.
+   *
+   * @param listener - Функция-подписчик.
+   * @returns Функция отписки.
+   * @public
+   * @example
+   * ```ts
+   * const unsubscribe = machine.subscribe((snapshot) => {
+   *   progress.style.width = `${(snapshot.context.currentTime / snapshot.context.duration) * 100}%`;
+   * });
+   * unsubscribe(); // отписаться
+   * ```
+   */
   public subscribe = (listener: PlayerListener): (() => void) => {
     this.listeners.add(listener);
     return () => {
@@ -95,8 +166,24 @@ export class PlayerMachine {
     };
   };
 
-  // Middleware plugins intercept every event before it reaches the reducer.
-  // Calling next(...) forwards it; skipping it swallows the event.
+  /**
+   * Регистрирует middleware для перехвата событий до их применения к состоянию.
+   *
+   * Middleware вызываются в порядке регистрации. Если middleware не вызывает
+   * `next`, событие поглощается и состояние не меняется.
+   *
+   * @param middleware - Функция промежуточного слоя.
+   * @returns Функция удаления middleware (удаляет последнюю регистрацию).
+   * @public
+   * @example
+   * ```ts
+   * const remove = machine.use((event, snapshot, next) => {
+   *   if (event.type === 'PLAY' && !snapshot.context.src) return; // не запускать без источника
+   *   next(event);
+   * });
+   * remove();
+   * ```
+   */
   public use = (middleware: PlayerMiddleware): (() => void) => {
     this.middlewares.push(middleware);
     return () => {
@@ -105,10 +192,35 @@ export class PlayerMachine {
     };
   };
 
+  /**
+   * Синоним метода {@link PlayerMachine.send}.
+   *
+   * Совпадает с сигнатурой Redux-подобного `dispatch`, чтобы автомат
+   * можно было подключить к существующим обвязкам без адаптеров.
+   *
+   * @param event - Событие плеера.
+   * @public
+   * @example
+   * ```ts
+   * machine.dispatch({ type: 'PLAY' });
+   * ```
+   */
   public dispatch = (event: PlayerEvent): void => {
     this.send(event);
   };
 
+  /**
+   * Отправляет событие в автомат с предварительным прогоном через конвейер middleware.
+   *
+   * @param event - Событие плеера.
+   * @public
+   * @example
+   * ```ts
+   * machine.send({ type: 'TIME_UPDATE', currentTime: 12.4, bufferedEnd: 40 });
+   * machine.send({ type: 'VOLUME_CHANGE', volume: 0.8, muted: false });
+   * machine.send({ type: 'RESET' });
+   * ```
+   */
   public send = (event: PlayerEvent): void => {
     this.runMiddleware(event, 0);
   };
@@ -335,4 +447,30 @@ export class PlayerMachine {
   }
 }
 
-export const createPlayerMachine = () => new PlayerMachine();
+/**
+ * Создаёт новый экземпляр конечного автомата медиаплеера.
+ *
+ * Функциональная запись эквивалентна `new PlayerMachine()` и удобна
+ * для модульного тестирования и передачи автомата как значения.
+ *
+ * @returns Инициализированный экземпляр {@link PlayerMachine} в статусе `idle`.
+ * @public
+ * @example
+ * ```ts
+ * import { createPlayerMachine } from '@web-react-player/core';
+ *
+ * const machine = createPlayerMachine();
+ * expect(machine.getSnapshot().status).toBe('idle');
+ * ```
+ *
+ * @example Кастомный начальный набор глав
+ * ```ts
+ * const machine = createPlayerMachine();
+ * machine.send({
+ *   type: 'LOAD',
+ *   src: '/media/film.mkv',
+ *   chapters: [{ title: 'Пролог', startTime: 0, endTime: 120 }],
+ * });
+ * ```
+ */
+export const createPlayerMachine = (): PlayerMachine => new PlayerMachine();

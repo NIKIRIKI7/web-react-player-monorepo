@@ -1,8 +1,28 @@
 import type { PlayerCommand } from './types';
 
-// YouTube Standard Shortcuts. Every canonical command has a list of alternative
-// key chords; the Command Dispatcher falls back to these bindings only when the
-// user did not override a given key.
+/**
+ * Стандартная раскладка горячих клавиш плеера (в стиле YouTube).
+ *
+ * У каждой канонической команды есть список альтернативных аккордов.
+ * Диспетчер обращается к этим привязкам только тогда, когда пользователь
+ * не переопределил соответствующую клавишу.
+ *
+ * Пустой массив означает, что команда не имеет клавиши по умолчанию
+ * (`play`, `pause`), но остаётся доступной через {@link HotkeysMap}.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { DEFAULT_HOTKEYS, executeCanonicalCommand, usePlayerContext } from '@web-react-player/ui';
+ *
+ * DEFAULT_HOTKEYS.togglePlay; // ['k', 'Space']
+ *
+ * const context = usePlayerContext();
+ * document.addEventListener('keydown', (e) => {
+ *   if (DEFAULT_HOTKEYS.togglePlay.includes(e.key)) executeCanonicalCommand('togglePlay', context);
+ * });
+ * ```
+ */
 export const DEFAULT_HOTKEYS: Record<PlayerCommand, string[]> = {
   togglePlay: ['k', 'Space'],
   play: [],

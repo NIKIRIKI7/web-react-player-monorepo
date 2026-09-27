@@ -8,14 +8,66 @@ import {
 } from './normalizer';
 import type { HotkeyAction, HotkeysMap, PlayerCommand } from './types';
 
-interface ResolvedBinding {
+/**
+ * Скомпилированная привязка клавиатурного аккорда к конкретному действию.
+ *
+ * Результат работы {@link compileHotkeyBindings}. Используется
+ * {@link handleKeyboardShortcut} для сопоставления события с аккордом.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { compileHotkeyBindings, handleKeyboardShortcut } from '@web-react-player/ui';
+ *
+ * const bindings = compileHotkeyBindings({ r: 'seekTo10' });
+ * document.addEventListener('keydown', (e) => handleKeyboardShortcut(e, bindings, context));
+ * ```
+ */
+export interface ResolvedBinding {
+  /**
+   * Распарсенный аккорд с флагами модификаторов.
+   *
+   * @example
+   * ```ts
+   * { key: 'k', shiftKey: false, ctrlKey: false, altKey: false, metaKey: false }
+   * ```
+   */
   chord: ParsedKeyChord;
+  /**
+   * Выполняемое действие или команда.
+   *
+   * @example
+   * ```ts
+   * action: 'togglePlay'
+   * ```
+   */
   action: HotkeyAction;
 }
 
-// Map a canonical command to the concrete player actions. Commands are the
-// single source of truth so custom key maps and the default layout share the
-// exact same execution path.
+/**
+ * Исполняет каноническую команду плеера через интерфейс `actions` контекста.
+ *
+ * Команды — единая точка истины для исполнения: и раскладка по умолчанию,
+ * и пользовательские перепривязки приводят к одному и тому же коду.
+ *
+ * @param command - Имя канонической команды.
+ * @param context - Контекст плеера.
+ * @public
+ * @example
+ * ```ts
+ * import { executeCanonicalCommand, usePlayerContext } from '@web-react-player/ui';
+ *
+ * const context = usePlayerContext();
+ * executeCanonicalCommand('skipActiveMarker', context);
+ * ```
+ *
+ * @example Ручная привязка кнопки к команде
+ * ```ts
+ * <button type="button" onClick={() => executeCanonicalCommand('seekTo90', context)}>
+ *   90%
+ * </button>
+ * ```
+ */
 export function executeCanonicalCommand(command: PlayerCommand, context: PlayerContextValue): void {
   const { state, actions } = context;
 
@@ -93,9 +145,27 @@ export function executeCanonicalCommand(command: PlayerCommand, context: PlayerC
   }
 }
 
-// Compile custom overrides (highest priority, first) followed by the default
-// YouTube layout. The first resolved binding for a matched key wins, so a user
-// chord shadows the built-in one for the same physical key.
+/**
+ * Компилирует пользовательскую карту клавиш и профиль по умолчанию
+ * в плоский массив привязок.
+ *
+ * Сначала добавляются пользовательские переопределения, затем — раскладка
+ * по умолчанию. При совпадении физической клавиши побеждает первая
+ * привязка, поэтому пользовательский аккорд перекрывает встроенный.
+ *
+ * @param userHotkeys - Пользовательская карта горячих клавиш.
+ * @returns Список разрешённых привязок {@link ResolvedBinding}.
+ * @public
+ * @example
+ * ```ts
+ * import { compileHotkeyBindings } from '@web-react-player/ui';
+ *
+ * const bindings = compileHotkeyBindings({
+ *   'Shift+N': (ctx) => ctx.actions.seek(0),
+ *   toggleMute: 'q',
+ * });
+ * ```
+ */
 export function compileHotkeyBindings(userHotkeys?: HotkeysMap): ResolvedBinding[] {
   const bindings: ResolvedBinding[] = [];
 
@@ -130,10 +200,34 @@ export function compileHotkeyBindings(userHotkeys?: HotkeysMap): ResolvedBinding
   return bindings;
 }
 
-// Route a keydown event through the pipeline:
-//   editable-focus filter -> chord matching -> preventDefault (only on match) -> execute.
-// Returns true when a binding claimed the key so the caller can decide on
-// further propagation.
+/**
+ * Обрабатывает событие `keydown`: фильтрует поля ввода, сопоставляет
+ * аккорды и запускает действие.
+ *
+ * Конвейер: фильтр редактируемых элементов → сопоставление аккорда →
+ * `preventDefault` (только при совпадении) → выполнение.
+ *
+ * @param event - Событие клавиатуры.
+ * @param bindings - Скомпилированный список привязок.
+ * @param context - Контекст плеера.
+ * @returns `true`, если комбинация была найдена и обработана.
+ * @public
+ * @example
+ * ```ts
+ * import { compileHotkeyBindings, handleKeyboardShortcut, usePlayerContext } from '@web-react-player/ui';
+ *
+ * function useGlobalHotkeys(): void {
+ *   const context = usePlayerContext();
+ *   const bindings = useMemo(() => compileHotkeyBindings(), []);
+ *
+ *   useEffect(() => {
+ *     const onKeyDown = (e: KeyboardEvent) => handleKeyboardShortcut(e, bindings, context);
+ *     document.addEventListener('keydown', onKeyDown);
+ *     return () => document.removeEventListener('keydown', onKeyDown);
+ *   }, [bindings, context]);
+ * }
+ * ```
+ */
 export function handleKeyboardShortcut(
   event: KeyboardEvent,
   bindings: ResolvedBinding[],

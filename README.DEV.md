@@ -1,32 +1,41 @@
 # 🛠️ Руководство разработчика (Developer Guide)
 
-Добро пожаловать в монорепозиторий **`web-react-player`**! Этот документ содержит полное описание архитектуры, каталог всех инструментов контроля качества, правила коммитов и пошаговый пайплайн разработки (включая вайб-кодинг с ИИ).
+Добро пожаловать в монорепозиторий **`web-react-player`**! Этот документ содержит описание структуры проекта, каталог всех инструментов контроля качества, правила коммитов и пошаговый пайплайн разработки (включая вайб-кодинг с ИИ).
+
+> 📘 **Описание архитектуры и полного API** — в [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+> Этот файл отвечает за процессы: инструменты, правила, чек-листы.
 
 ---
 
-## 📁 Архитектура проекта
+## 📁 Структура проекта
 
-Монорепозиторий управляется через **pnpm workspaces**:
+Монорепозиторий управляется через **pnpm workspaces** (`packages/*`, `apps/*`, `apps/vidora-mini/frontend`):
 
 ```text
 web-react-player/
 ├── packages/
-│   ├── core/         # Ядро плеера: FSM машина состояний, события (Framework-agnostic, без React)
-│   └── ui/           # React 19 компоненты, хук usePlayer, элементы управления
+│   ├── core/         # @web-react-player/core (v1.0.0): FSM машина состояний и типы, без React и DOM
+│   ├── ui/           # @web-react-player/ui (v1.0.0): React-провайдер, headless-примитивы, раскладка, хоткеи
+│   └── remotion/     # @web-react-player/remotion (v0.1.0): TSX-компилятор, плагины, экспорт, виджеты
 ├── apps/
-│   └── playground/   # Vite + React 19 приложение для тестирования в браузере (private: true)
-├── docs/             # Автогенерируемая Markdown-документация API (TypeDoc)
+│   ├── playground/       # Vite-песочница с 5 демо (порт 5173, private: true)
+│   └── vidora-mini/      # Фронтенд (порт 5174) + FastAPI/FFmpeg-бэкенд (порт 8355)
+├── docs/             # ARCHITECTURE.md + автогенерируемая Markdown-документация API (TypeDoc)
 ├── .github/          # CI/CD workflows: ci.yml, release.yml, security.yml
 └── .husky/           # Git-хуки: pre-commit, commit-msg
 ```
+
+Порядок зависимостей строго односторонний: `remotion → ui → core`. Проверяется через
+`pnpm check:deps` (dependency-cruiser).
 
 ---
 
 ## 🚀 Быстрый старт
 
 ### Системные требования
-* **Node.js**: `>= 20.0.0` (рекомендуется `22.x LTS`)
-* **pnpm**: `>= 9.x`
+* **Node.js**: `^20.19.0 || >=22.12.0` (рекомендуется `22.x LTS`)
+* **pnpm**: `12.4.2` (зафиксировано полем `packageManager`)
+* **Для `apps/vidora-mini` дополнительно**: Python `3.10+`, FFmpeg и ffprobe в `PATH`
 
 ### Установка зависимостей
 ```bash
@@ -39,6 +48,12 @@ pnpm dev:app
 ```
 *Песочница доступна на `http://localhost:5173`. Благодаря Vite-алиасам изменения в `packages/*/src` моментально отображаются в браузере без пересборки пакетов (HMR).*
 
+### Запуск второго приложения (Vidora Mini)
+```bash
+pnpm --filter vidora-tester dev   # http://localhost:5174
+```
+Бэкенд с реальным FFmpeg поднимается отдельно — см. [apps/vidora-mini/README.md](./apps/vidora-mini/README.md).
+
 ---
 
 ## 🧰 Полный каталог инструментов проекта
@@ -50,7 +65,7 @@ pnpm dev:app
 | :--- | :--- | :--- |
 | **Biome** | Сверхбыстрый линтер и форматтер (замена ESLint и Prettier) | `pnpm lint` / `pnpm lint:fix` |
 | **TypeScript (5.8+)** | Проверка типов без компиляции файлов | `pnpm typecheck` |
-| **ts-reset** | Устранение «дыр» в типах TS (`JSON.parse` и `.json()` возвращают `unknown`, а не `any`) | Работает автоматически через `src/reset.d.ts` |
+| **ts-reset** | Устранение «дыр» в типах TS (`JSON.parse` и `.json()` возвращают `unknown`, а не `any`) | Работает автоматически через `packages/*/reset.d.ts` |
 | **Knip** | Поиск мертвого кода, неиспользуемых экспортов и забытых пакетов | `pnpm check:knip` |
 | **Syncpack** | Синхронизация версий зависимостей во всех пакетах репозитория | `pnpm check:syncpack` / `pnpm fix:syncpack` |
 | **Dependency Cruiser** | Контроль архитектуры: запрет циклических импортов и утечек из UI в Core | `pnpm check:deps` |
@@ -71,7 +86,7 @@ pnpm dev:app
 | **Stryker Mutator** | Мутационное тестирование (проверка качества и «живучести» самих тестов) | `pnpm test:mutation` |
 | **Socket.dev** | Сканирование зависимостей на уязвимости и вредоносный код | `pnpm check:security` |
 | **Gitleaks** | Защита от случайного коммита секретов, токенов и API-ключей | В GitHub Actions (`security.yml`) |
-| **TypeDoc** | Автоматическая генерация Markdown-документации API из JSDoc | `pnpm docs:api` |
+| **TypeDoc** | Автоматическая генерация Markdown-документации API из JSDoc (`core`, `ui`, `remotion`) | `pnpm build && pnpm docs:api` |
 | **CodeRabbit** | ИИ-ассистент, проводящий ревью каждого открытого Pull Request | Автоматически в PR |
 
 ---
@@ -125,15 +140,21 @@ pnpm repomix:ui          # -> repomix-ui.xml
 pnpm repomix:app         # -> repomix-playground.xml
 ```
 
+```bash 
+# Упаковка приложения Vidora Mini (frontend + backend)
+pnpm repomix:vidora-mini
+```
+
 ### Памятка для системного промпта ИИ:
 * Архитектура: Pure ESM (`"type": "module"`), React 19, TypeScript.
 * Линтер: **Biome** (ESLint и Prettier использовать запрещено).
 * `@web-react-player/core` — framework-agnostic (никакого React или DOM-специфичного UI).
+* `@web-react-player/ui` — React-слой поверх `core`; состояние читается через `usePlayerState(selector)`.
+* `@web-react-player/remotion` — движок: компиляция TSX, плагины, экспорт; общается с FSM через события.
 * Типизация: строгий режим, запрещен `any`, использовать сужение `unknown`.
+* Включён `exactOptionalPropertyTypes`: опциональные поля нельзя передавать как `undefined` явно — используйте условный spread.
 
 ---
-
-## 🔄 Пошаговый цикл разработки (Development Pipeline)
 
 ## 🔄 Полный пайплайн качественной разработки (Step-by-Step Pipeline)
 
@@ -144,8 +165,10 @@ pnpm repomix:app         # -> repomix-playground.xml
 ### Этап 0. Архитектурное планирование (Contract First)
 Перед написанием кода определите границы ответственности:
 1. **Логика и состояние:** Описываются **только** в `@web-react-player/core` через конечный автомат (FSM). Добавьте новые события и статусы в `packages/core/src/fsm/types.ts`.
-2. **Интерфейс:** Описывается в `@web-react-player/ui` как чистая подписка на снапшот FSM через хук `usePlayer()`.
-3. Пакет `core` **никогда не знает о DOM-элементах и React**.
+   *Не забудьте добавить новое поле контекста в список сравнения в `processEvent` (`packages/core/src/fsm/machine.ts`) — иначе подписчики не узнают об изменении.*
+2. **Интерфейс:** Описывается в `@web-react-player/ui` как подписка на снапшот FSM через хуки `usePlayerContext()` (полный контекст) и `usePlayerState(selector)` (гранулярная подписка).
+3. **Движок медиа:** Отдельный пакет, который подключается к тому же контексту. Готовые примеры — `Html5VideoProvider` (`ui`) и `RemotionProvider` (`remotion`).
+4. Пакет `core` **никогда не знает о DOM-элементах и React**.
 
 ---
 
@@ -234,8 +257,9 @@ pnpm test
    *Команда обновит слепки `packages/*/etc/*.api.md`. Обязательно выполните `git diff`, чтобы убедиться, что из публичного API не удалено ничего лишнего.*
 3. **Генерация свежей Markdown-документации:**
    ```bash
-   pnpm docs:api
+   pnpm build && pnpm docs:api
    ```
+   *TypeDoc работает по собранным `dist/*.d.ts`. Без `pnpm build` команда отработает «успешно», но создаст пустые страницы. Результат лежит в `docs/api/` и не версионируется.*
 4. **Комплексная предрелизная проверка:**
    ```bash
    pnpm check:packages
@@ -249,7 +273,7 @@ pnpm test
    ```bash
    pnpm changeset
    ```
-   * Выберите пакеты клавишей `Space` (`@web-react-player/core`, `@web-react-player/ui`).
+   * Выберите пакеты клавишей `Space` (`@web-react-player/core`, `@web-react-player/ui`, при необходимости `@web-react-player/remotion`).
    * Выберите уровень версии:
      * `patch` — багфикс или внутренняя оптимизация;
      * `minor` — новая функциональность с обратной совместимостью;
@@ -311,7 +335,7 @@ pnpm test
 | `pnpm check:size` | Замер веса и tree-shaking через Size Limit |
 | `pnpm check:packages` | **Полный предрелизный аудит** (билд + publint + attw + size + api) |
 | `pnpm api:check` / `api:update` | Проверка / обновление слепка API Extractor |
-| `pnpm docs:api` | Генерация Markdown API-документации TypeDoc |
+| `pnpm docs:api` | Генерация Markdown API-документации TypeDoc (после `pnpm build`) |
 | `pnpm test` | Запуск тестов Vitest |
 | `pnpm test:mutation` | Запуск мутационного тестирования Stryker |
 | `pnpm changeset` | Создание файла изменений для релиза |

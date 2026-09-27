@@ -9,14 +9,84 @@ const MARKER_TRACK_COLORS: Record<string, string> = {
   highlight: '#ef4444',
 };
 
+/**
+ * Свойства таймлайна {@link TimeSlider}.
+ *
+ * Наследует нативные атрибуты `<div>`, кроме `onChange`: обработчик
+ * перерисовки таймлайна задаётся внутренними указательными событиями.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <TimeSlider trackClassName="track" progressClassName="progress" thumbClassName="thumb" />
+ * ```
+ */
 export interface TimeSliderProps extends Omit<ComponentProps<'div'>, 'onChange'> {
+  /**
+   * CSS-класс ползунка воспроизведения.
+   *
+   * @example
+   * ```tsx
+   * <TimeSlider thumbClassName="my-thumb" />
+   * ```
+   */
   thumbClassName?: string;
+  /**
+   * CSS-класс дорожки таймлайна.
+   *
+   * @example
+   * ```tsx
+   * <TimeSlider trackClassName="my-track" />
+   * ```
+   */
   trackClassName?: string;
+  /**
+   * CSS-класс полосы прогресса.
+   *
+   * @example
+   * ```tsx
+   * <TimeSlider progressClassName="my-progress" />
+   * ```
+   */
   progressClassName?: string;
+  /**
+   * CSS-класс полосы буферизации.
+   *
+   * @example
+   * ```tsx
+   * <TimeSlider bufferClassName="my-buffer" />
+   * ```
+   */
   bufferClassName?: string;
+  /**
+   * CSS-класс всплывающего превью кадра при наведении.
+   *
+   * @example
+   * ```tsx
+   * <TimeSlider previewClassName="my-preview" />
+   * ```
+   */
   previewClassName?: string;
 }
 
+/**
+ * Таймлайн воспроизведения: дорожка, буфер, прогресс и перетаскиваемый ползунок.
+ *
+ * Показывает полосы сегментов интерактивных маркеров (интро, спонсор, аутро)
+ * прямо на дорожке, всплывающее превью с временем при наведении и
+ * перетаскивание с поддержкой `PointerEvent`. Во время перетаскивания
+ * переключается `context.isScrubbing`, что подавляет автоскрытие контролов.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { TimeDisplay, TimeSlider } from '@web-react-player/ui';
+ *
+ * <TimeSlider />
+ * <TimeDisplay type="current" />
+ * <TimeDisplay type="duration" />
+ * ```
+ */
 export function TimeSlider({
   ref,
   className,

@@ -8,6 +8,10 @@ import {
 import { DefaultStandardLayout, PlayerProvider, Root } from '@web-react-player/ui';
 import { useMemo, useState } from 'react';
 
+// exactOptionalPropertyTypes не даёт присвоить optional-пропу явный undefined,
+// поэтому извлекаем непустой набор значений.
+type ExportQuality = NonNullable<ExportOptions['quality']>;
+
 // Сценарий для Remotion с тестом всех фич аудиомикса
 const SAMPLE_AUDIO_MIXER_TSX = `
 import React from 'react';
@@ -182,7 +186,7 @@ export function AudioMixerDemo() {
   const [suite] = useState(() => createDefaultRemotionSuite());
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
-  const [exportQuality, setExportQuality] = useState<ExportOptions['quality']>('standard');
+  const [exportQuality, setExportQuality] = useState<ExportQuality>('standard');
 
   // Виртуальная файловая система: связываем относительные имена с реальными CORS-доступными URL
   const remotionSource = useMemo<Extract<RemotionSource, { type: 'code' }>>(
@@ -298,7 +302,7 @@ export function AudioMixerDemo() {
           <select
             id="audio-export-quality"
             value={exportQuality}
-            onChange={(e) => setExportQuality(e.target.value as ExportOptions['quality'])}
+            onChange={(e) => setExportQuality(e.target.value as ExportQuality)}
             disabled={isExporting}
             style={{
               padding: '8px 12px',

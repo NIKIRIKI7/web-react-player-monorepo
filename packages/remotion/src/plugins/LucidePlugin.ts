@@ -2,10 +2,58 @@ import * as LucideIcons from 'lucide-react';
 import React from 'react';
 import type { IRemotionPlugin } from '../types';
 
+/**
+ * Плагин, предоставляющий иконки `lucide-react` коду композиции.
+ *
+ * Импорт `lucide-react` из TSX разрешается в безопасный прокси поверх
+ * установленной библиотеки. Если иконка с запрошенным именем не существует,
+ * вместо неё возвращается нейтральная заглушка-иконка, чтобы сбой в
+ * пользовательском коде не ломал весь рендеринг.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { createDefaultRemotionSuite } from '@web-react-player/remotion';
+ *
+ * const { compiler } = createDefaultRemotionSuite();
+ * const { Component } = await compiler.compile(
+ *   `import { Play } from 'lucide-react';
+ *    export const Composition = () => <Play size={48} />;`,
+ * );
+ * ```
+ */
 export class LucideIconsPlugin implements IRemotionPlugin {
+  /**
+   * Уникальный идентификатор плагина.
+   *
+   * @example
+   * ```ts
+   * plugin.id; // 'remotion-plugin-lucide'
+   * ```
+   */
   public readonly id = 'remotion-plugin-lucide';
+  /**
+   * Отображаемое имя плагина.
+   *
+   * @example
+   * ```ts
+   * plugin.name; // 'Lucide Icons Provider'
+   * ```
+   */
   public readonly name = 'Lucide Icons Provider';
 
+  /**
+   * Разрешает импорт `lucide-react` в безопасный прокси иконок.
+   *
+   * @param moduleName - Имя импортируемого модуля.
+   * @returns Прокси экспортов иконок либо `null` для других модулей.
+   * @public
+   * @example
+   * ```ts
+   * const icons = plugin.resolveImports('lucide-react');
+   * const unrelated = plugin.resolveImports('three'); // null
+   * ```
+   */
   public resolveImports(moduleName: string): Record<string, unknown> | null {
     if (moduleName === 'lucide-react') {
       return this.createSafeProxy(LucideIcons as Record<string, unknown>);

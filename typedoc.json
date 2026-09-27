@@ -1,9 +1,17 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "plugin": ["typedoc-plugin-markdown"],
-  "entryPointStrategy": "packages",
-  "entryPoints": ["packages/core", "packages/ui"],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "tsconfig.base.json",
+  "entryPoints": [
+    "packages/core/src/index.ts",
+    "packages/ui/src/index.ts",
+    "packages/remotion/src/index.ts"
+  ],
   "out": "docs/api",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
   "cleanOutputDir": true,
   "readme": "none",
   "hideGenerator": true,

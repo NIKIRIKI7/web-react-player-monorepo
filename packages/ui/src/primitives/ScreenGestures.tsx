@@ -1,8 +1,43 @@
 import { type ComponentProps, type PointerEvent, useRef } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства области жестов по экрану.
+ *
+ * Наследует все нативные атрибуты `<div>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <ScreenGestures className="gestures" />
+ * ```
+ */
 export interface ScreenGesturesProps extends ComponentProps<'div'> {}
 
+/**
+ * Прозрачная область поверх видео, реализующая мобильные жесты:
+ * горизонтальный свайп — перемотка, вертикальный свайп слева — яркость,
+ * справа — громкость, долгое нажатие (500 мс) без свайпа — ускорение до 2x.
+ *
+ * Свайп срабатывает после сдвига более 10 px; вертикальное изменение
+ * яркости ограничено левой половиной элемента, громкости — правой.
+ * Исходная скорость сохраняется при старте жеста и возвращается при отпускании,
+ * если ускорение было включено долгим нажатием.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { ScreenGestures, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <Root>
+ *     <ScreenGestures>
+ *       <video src="/media/movie.mp4" />
+ *     </ScreenGestures>
+ *   </Root>
+ * </PlayerProvider>
+ * ```
+ */
 export function ScreenGestures({ className, style, ...props }: ScreenGesturesProps) {
   const { state, actions } = usePlayerContext();
   const stateRef = useRef(state);

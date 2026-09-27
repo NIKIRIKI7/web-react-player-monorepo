@@ -22,42 +22,406 @@ import {
 import { type CaptionStylePreferences, DEFAULT_CAPTION_STYLES } from '../captions/types';
 import { loadCaptionPreferences, saveCaptionPreferences } from '../captions/utils';
 
+/**
+ * Значение React-контекста плеера: снимок состояния FSM, ссылки на DOM,
+ * адаптивные флаги раскладки и стабильный набор действий.
+ *
+ * Доступно через {@link usePlayerContext}. Все поля `actions` создаются один
+ * раз и никогда не пересоздаются, поэтому их можно свободно указывать в
+ * зависимостях `useEffect`/`useMemo`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { usePlayerContext, usePlayerState } from '@web-react-player/ui';
+ *
+ * function Status() {
+ *   const { actions, isSmall } = usePlayerContext();
+ *   const status = usePlayerState((s) => s.status);
+ *   return <button onClick={() => void actions.togglePlay()}>Статус: {status}</button>;
+ * }
+ * ```
+ */
 export interface PlayerContextValue {
+  /**
+   * Текущий снимок состояния конечного автомата.
+   *
+   * Объект меняет ссылку при каждом переходе, поэтому для точечных
+   * подписок используйте {@link usePlayerState} с селектором.
+   *
+   * @example
+   * ```tsx
+   * const { state } = usePlayerContext();
+   * console.log(state.status, state.context.currentTime);
+   * ```
+   */
   state: PlayerSnapshot;
+  /**
+   * Подписка на изменения снимка состояния.
+   *
+   * Возвращает функцию отписки, которую нужно вызвать в `useEffect`.
+   *
+   * @example
+   * ```tsx
+   * useEffect(() => context.subscribe((s) => console.log(s.status)), [context]);
+   * ```
+   */
   subscribe: (listener: PlayerListener) => () => void;
+  /**
+   * Отправить событие в конечный автомат.
+   *
+   * Прямой доступ к FSM для редких случаев; обычным компонентам следует
+   * использовать `actions`.
+   *
+   * @example
+   * ```tsx
+   * send({ type: 'PAUSE' });
+   * ```
+   */
   send: (event: PlayerEvent) => void;
+  /**
+   * Ссылка на корневой контейнер `<Root>`.
+   *
+   * Используется для полноэкранного режима и наблюдения за размером.
+   *
+   * @example
+   * ```tsx
+   * rootRef.current?.requestFullscreen();
+   * ```
+   */
   rootRef: React.RefObject<HTMLDivElement | null>;
+  /**
+   * Ссылка на элемент `<video>`, к которому подключён плеер.
+   *
+   * @example
+   * ```tsx
+   * videoRef.current?.requestPictureInPicture();
+   * ```
+   */
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  /**
+   * Видимы ли элементы управления в данный момент.
+   *
+   * Управляется логикой простоя: скрывается после `idleTimeout` без ввода.
+   *
+   * @example
+   * ```tsx
+   * <div style={{ opacity: controlsVisible ? 1 : 0 }}>...</div>
+   * ```
+   */
   controlsVisible: boolean;
+  /**
+   * Принудительно задать видимость элементов управления.
+   *
+   * @example
+   * ```tsx
+   * setControlsVisible(true);
+   * ```
+   */
   setControlsVisible: (visible: boolean) => void;
+  /**
+   * Идёт ли сейчас перетаскивание ползунка времени пользователем.
+   *
+   * Пока значение `true`, автоматическое скрытие контролов подавляется.
+   *
+   * @example
+   * ```tsx
+   * if (isScrubbing) return; // не скрывать панель
+   * ```
+   */
   isScrubbing: boolean;
+  /**
+   * Задать признак перетаскивания таймлайна.
+   *
+   * @example
+   * ```tsx
+   * onPointerDown={() => setIsScrubbing(true)}
+   * ```
+   */
   setIsScrubbing: (scrubbing: boolean) => void;
+  /**
+   * Находится ли плеер в компактной раскладке.
+   *
+   * `true`, если ширина контейнера меньше порога `smallWhenWidth`
+   * (по умолчанию 580 px).
+   *
+   * @example
+   * ```tsx
+   * isSmall ? <IconButton /> : <TextButton />
+   * ```
+   */
   isSmall: boolean;
+  /**
+   * Принудительно задать компактную раскладку.
+   *
+   * Обычно не вызывается вручную: значение вычисляется через `ResizeObserver`.
+   *
+   * @example
+   * ```tsx
+   * setIsSmall(true);
+   * ```
+   */
   setIsSmall: (isSmall: boolean) => void;
+  /**
+   * Текущая плотность раскладки по ширине контейнера.
+   *
+   * @example
+   * ```tsx
+   * const dense = tier === 'sm' || tier === 'xs';
+   * ```
+   */
   tier: ContainerTier;
+  /**
+   * Актуальные стили субтитров, включая сохранённые пользователем.
+   *
+   * @example
+   * ```tsx
+   * <div style={captionStylesToCssVariables(captionStyles)}>...</div>
+   * ```
+   */
   captionStyles: CaptionStylePreferences;
+  /**
+   * Изменить стили субтитров и сохранить их в `localStorage`.
+   *
+   * @example
+   * ```tsx
+   * setCaptionStyles({ ...captionStyles, fontSize: 32 });
+   * ```
+   */
   setCaptionStyles: (styles: CaptionStylePreferences) => void;
+  /**
+   * Идентификатор открытого выпадающего меню или `null`, если все закрыты.
+   *
+   * Координатор не позволяет плавающим элементам управления (например,
+   * кнопке «Пропустить») перекрывать открытое меню.
+   *
+   * @example
+   * ```tsx
+   * if (activeMenu === null) actions.toggleCaptions();
+   * ```
+   */
   activeMenu: string | null;
+  /**
+   * Открыть или закрыть выпадающее меню.
+   *
+   * @example
+   * ```tsx
+   * setActiveMenu('quality'); // открыть
+   * setActiveMenu(null);      // закрыть
+   * ```
+   */
   setActiveMenu: (menu: string | null) => void;
+  /**
+   * Набор императивных действий над плеером.
+   *
+   * Объект стабилен между рендерами, поэтому безопасен для передачи
+   * в обработчики и зависимостей мемоизации.
+   *
+   * @example
+   * ```tsx
+   * const { actions } = usePlayerContext();
+   * actions.seek(30);
+   * actions.seekRelative(-5);
+   * actions.setAudioGain(1.5);
+   * actions.setQuality('auto');
+   * ```
+   */
   actions: {
+    /**
+     * Запустить воспроизведение с плавным нарастанием громкости.
+     *
+     * @param smartResume - Использовать умное возобновление, если текущая
+     * позиция попадает в один из маркеров.
+     * @example
+     * ```tsx
+     * await actions.play();
+     * await actions.play(true);
+     * ```
+     */
     play: (smartResume?: boolean) => Promise<void>;
+    /**
+     * Поставить на паузу, при необходимости плавно погасив звук.
+     *
+     * @param reason - Причина умной паузы: `visibility` (вкладка скрыта) или
+     * `intersection` (контейнер вне экрана).
+     * @example
+     * ```tsx
+     * actions.pause();
+     * actions.pause('visibility');
+     * ```
+     */
     pause: (reason?: 'visibility' | 'intersection') => void;
+    /**
+     * Переключить состояние воспроизведения.
+     *
+     * @example
+     * ```tsx
+     * await actions.togglePlay();
+     * ```
+     */
     togglePlay: () => Promise<void>;
+    /**
+     * Перейти к абсолютному времени в секундах.
+     *
+     * Значение зажимается в диапазон `[0, duration]`.
+     *
+     * @example
+     * ```tsx
+     * actions.seek(42);
+     * ```
+     */
     seek: (time: number) => void;
+    /**
+     * Сместить позицию воспроизведения относительно текущей.
+     *
+     * @param seconds - Смещение в секундах; отрицательное значение отматывает.
+     * @example
+     * ```tsx
+     * actions.seekRelative(10);
+     * actions.seekRelative(-5);
+     * ```
+     */
     seekRelative: (seconds: number) => void;
+    /**
+     * Установить базовую громкость в диапазоне `[0, 1]`.
+     *
+     * @example
+     * ```tsx
+     * actions.setVolume(0.6);
+     * ```
+     */
     setVolume: (volume: number) => void;
+    /**
+     * Установить усиление звука (AudioBoost) в диапазоне `[0, 3]`.
+     *
+     * Значения выше `1` работают через Web Audio API; при его недоступности
+     * происходит откат к нативной громкости.
+     *
+     * @example
+     * ```tsx
+     * actions.setAudioGain(0.5);
+     * actions.setAudioGain(2.5); // 250 %
+     * ```
+     */
     setAudioGain: (gain: number) => void;
+    /**
+     * Переключить отключение звука.
+     *
+     * @example
+     * ```tsx
+     * actions.toggleMute();
+     * ```
+     */
     toggleMute: () => void;
+    /**
+     * Установить скорость воспроизведения.
+     *
+     * @example
+     * ```tsx
+     * actions.setPlaybackRate(1.5);
+     * ```
+     */
     setPlaybackRate: (rate: number) => void;
+    /**
+     * Установить яркость видео в диапазоне `[0.1, 3]`.
+     *
+     * @example
+     * ```tsx
+     * actions.setBrightness(1.2);
+     * ```
+     */
     setBrightness: (level: number) => void;
+    /**
+     * Включить или выключить ускорение долгого нажатия.
+     *
+     * @example
+     * ```tsx
+     * actions.setLongPressSpeedUp(true);
+     * ```
+     */
     setLongPressSpeedUp: (active: boolean) => void;
+    /**
+     * Войти в полноэкранный режим или выйти из него.
+     *
+     * На iOS используется нативный полноэкранный режим видеоэлемента.
+     *
+     * @example
+     * ```tsx
+     * await actions.toggleFullscreen();
+     * ```
+     */
     toggleFullscreen: () => Promise<void>;
+    /**
+     * Включить или выключить режим «картинка в картинке».
+     *
+     * @example
+     * ```tsx
+     * await actions.togglePIP();
+     * ```
+     */
     togglePIP: () => Promise<void>;
+    /**
+     * Переключить театральный режим.
+     *
+     * @example
+     * ```tsx
+     * actions.toggleTheater();
+     * ```
+     */
     toggleTheater: () => void;
+    /**
+     * Включить или выключить субтитры.
+     *
+     * @example
+     * ```tsx
+     * actions.toggleCaptions();
+     * ```
+     */
     toggleCaptions: () => void;
+    /**
+     * Включить или выключить фоновое свечение Ambilight.
+     *
+     * Предпочтение сохраняется в `localStorage`.
+     *
+     * @example
+     * ```tsx
+     * actions.toggleAmbient();
+     * ```
+     */
     toggleAmbient: () => void;
+    /**
+     * Включить или выключить «документный» PiP (перенос плеера в портал страницы).
+     *
+     * @example
+     * ```tsx
+     * actions.toggleDocumentPip();
+     * ```
+     */
     toggleDocumentPip: () => void;
+    /**
+     * Зарегистрировать пользовательское действие для `ActionBezel`.
+     *
+     * @param type - Тип действия, например `seek_forward` или `volume`.
+     * @param value - Значение, выводимое в бейдже.
+     * @example
+     * ```tsx
+     * actions.triggerAction('seek_forward', 10);
+     * actions.triggerAction('mute');
+     * ```
+     */
     triggerAction: (type: string, value?: string | number) => void;
+    /**
+     * Переключить качество видео.
+     *
+     * При смене источника сохраняются позиция и состояние воспроизведения.
+     *
+     * @param qualityId - Идентификатор качества либо строка `auto`.
+     * @example
+     * ```tsx
+     * actions.setQuality('auto');
+     * actions.setQuality('1080p');
+     * ```
+     */
     setQuality: (qualityId: string | 'auto') => void;
   };
 }
@@ -70,9 +434,47 @@ const FADE_DURATION = 0.3;
 // Responsive container tiers let the player UI adapt its density to the
 // available width: the full control set only fits wide players, while narrow
 // ones collapse it step by step to avoid overflowing the bottom bar.
+/**
+ * Плотность адаптивной раскладки, вычисляемая по ширине контейнера.
+ *
+ * Полный набор контролов помещается только в широких плеерах, поэтому узкие
+ * контейнеры сворачивают панель управления шаг за шагом, чтобы она не
+ * переполнялась.
+ *
+ * - `xl` — от 800 px;
+ * - `lg` — от 660 px;
+ * - `md` — от 520 px;
+ * - `sm` — от 360 px;
+ * - `xs` — уже 360 px.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { getContainerTier } from '@web-react-player/ui';
+ *
+ * getContainerTier(1024); // 'xl'
+ * getContainerTier(700);  // 'lg'
+ * getContainerTier(320);  // 'xs'
+ * ```
+ */
 export type ContainerTier = 'xl' | 'lg' | 'md' | 'sm' | 'xs';
 
-// Breakpoints follow a YouTube-like density ladder.
+/**
+ * Вычисляет плотность раскладки по ширине контейнера в пикселях.
+ *
+ * Границы брейкпоинтов повторяют ладдер плотности в духе YouTube.
+ *
+ * @param width - Ширина контейнера в пикселях.
+ * @returns Идентификатор плотности {@link ContainerTier}.
+ * @public
+ * @example
+ * ```tsx
+ * import { getContainerTier, usePlayerContext } from '@web-react-player/ui';
+ *
+ * const { tier } = usePlayerContext();
+ * const showChapters = getContainerTier(900) === 'xl' && tier === 'xl';
+ * ```
+ */
 export function getContainerTier(width: number): ContainerTier {
   if (width >= 800) return 'xl';
   if (width >= 660) return 'lg';
@@ -84,6 +486,24 @@ export function getContainerTier(width: number): ContainerTier {
 // Width (px) below which the player switches to the compact ("small") layout.
 const SMALL_WHEN_WIDTH = 580;
 
+/**
+ * Возвращает значение контекста плеера.
+ *
+ * Бросает ошибку, если компонент отрисован вне {@link PlayerProvider}, чтобы
+ * проблема обнаруживалась сразу, а не через `undefined`-деструктуризацию.
+ *
+ * @throws Если вызывается вне `PlayerProvider`.
+ * @public
+ * @example
+ * ```tsx
+ * import { usePlayerContext } from '@web-react-player/ui';
+ *
+ * function SkipButton() {
+ *   const { actions } = usePlayerContext();
+ *   return <button onClick={() => actions.seek(0)}>К началу</button>;
+ * }
+ * ```
+ */
 export function usePlayerContext(): PlayerContextValue {
   const context = use(PlayerContext);
   if (!context) {
@@ -94,6 +514,32 @@ export function usePlayerContext(): PlayerContextValue {
 
 // DX Improvement: granular state selectors protect components from re-renders
 // on every currentTime frame. The hook only subscribes to fields returned by the selector.
+/**
+ * Подписка на отдельное поле состояния конечного автомата.
+ *
+ * Гранулярные селекторы защищают компоненты от перерисовки на каждом кадре
+ * обновления `currentTime`: перерендер происходит только тогда, когда значение,
+ * возвращённое селектором, реально изменилось.
+ *
+ * @param selector - Функция, извлекающая нужное значение из снимка состояния.
+ * @returns Текущее значение селектора.
+ * @public
+ * @example
+ * ```tsx
+ * import { usePlayerState } from '@web-react-player/ui';
+ *
+ * const isPlaying = usePlayerState((s) => s.status === 'playing');
+ * const volume = usePlayerState((s) => s.context.audioGain);
+ * ```
+ *
+ * @example С компонентом
+ * ```tsx
+ * function Muted() {
+ *   const muted = usePlayerState((s) => s.context.muted);
+ *   return muted ? <MuteIcon /> : <VolumeIcon />;
+ * }
+ * ```
+ */
 export function usePlayerState<T>(selector: (state: PlayerSnapshot) => T): T {
   const ctx = usePlayerContext();
   const [val, setVal] = useState<T>(() => selector(ctx.state));
@@ -108,14 +554,102 @@ export function usePlayerState<T>(selector: (state: PlayerSnapshot) => T): T {
   return val;
 }
 
+/**
+ * Свойства корневого провайдера плеера {@link PlayerProvider}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <PlayerProvider initialChapters={chapters} initialMarkers={markers}>
+ *   <Root />
+ * </PlayerProvider>
+ * ```
+ */
 export interface PlayerProviderProps {
+  /**
+   * Поддерево плеера, обычно `Root` и компоненты управления.
+   *
+   * @example
+   * ```tsx
+   * <PlayerProvider>
+   *   <Root>
+   *     <video src="/media/movie.mp4" />
+   *   </Root>
+   * </PlayerProvider>
+   * ```
+   */
   children: ReactNode;
+  /**
+   * Главы, известные заранее; отправляются в автомат событием `SET_CHAPTERS`.
+   *
+   * @example
+   * ```tsx
+   * <PlayerProvider initialChapters={[{ id: 'intro', title: 'Интро', startTime: 0 }]} />
+   * ```
+   */
   initialChapters?: Chapter[];
+  /**
+   * Дорожки субтитров; отправляются в автомат событием `SET_CAPTIONS`.
+   *
+   * @example
+   * ```tsx
+   * <PlayerProvider initialCaptions={[{ id: 'c1', startTime: 0, endTime: 2, text: 'Привет' }]} />
+   * ```
+   */
   initialCaptions?: CaptionCue[];
+  /**
+   * Интерактивные маркеры (интро, спонсор, аутро).
+   *
+   * @example
+   * ```tsx
+   * <PlayerProvider initialMarkers={[{ id: 'm1', type: 'intro', startTime: 0, endTime: 30, label: 'Пропустить' }]} />
+   * ```
+   */
   initialMarkers?: Marker[];
+  /**
+   * Доступные варианты качества видео.
+   *
+   * @example
+   * ```tsx
+   * <PlayerProvider initialQualities={[{ id: '1080p', label: '1080p', height: 1080 }]} />
+   * ```
+   */
   initialQualities?: VideoQuality[];
 }
 
+/**
+ * Провайдер плеера: создаёт конечный автомат, публикует его состояние
+ * в React-контексте и восстанавливает сохранённые настройки.
+ *
+ * Провайдер отвечает за всё, что не относится к раскладке:
+ * создание автомата и передачу начальных данных (главы, субтитры, маркеры,
+ * качество), гидратацию громкости, скорости и режима Ambilight из
+ * `localStorage`, адаптивные флаги `isSmall` и `tier` через `ResizeObserver`,
+ * тактильную отдачу на смену главы, Web Audio-граф для AudioBoost и
+ * координацию открытых меню.
+ *
+ * Дочерние компоненты не отрисовываются, пока настройки не восстановлены, —
+ * это предотвращает расхождение гидратации.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { PlayerProvider, Root, Html5VideoProvider, TimeSlider } from '@web-react-player/ui';
+ *
+ * export function App() {
+ *   return (
+ *     <PlayerProvider
+ *       initialMarkers={[{ id: 'sponsor', type: 'sponsor', startTime: 30, endTime: 90 }]}
+ *     >
+ *       <Root>
+ *         <Html5VideoProvider src="/media/movie.mp4" />
+ *         <TimeSlider />
+ *       </Root>
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ */
 export function PlayerProvider({
   children,
   initialChapters,

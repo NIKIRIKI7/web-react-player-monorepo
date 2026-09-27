@@ -1,12 +1,44 @@
 import type { ComponentProps, Ref } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства медиаадаптера {@link Html5VideoProvider}.
+ *
+ * Наследует все нативные атрибуты `<video>`, включая `src`, `poster`,
+ * `crossOrigin` и `muted`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <Html5VideoProvider src="/media/movie.mp4" poster="/media/poster.jpg" />
+ * ```
+ */
 export interface Html5VideoProviderProps extends ComponentProps<'video'> {}
 
-// Media adapter for plain MP4/WebM playback. It is intentionally "dumb": it only
-// renders a native <video> element and forwards native media events into the
-// shared FSM. The UI package does not know anything about Remotion or HLS —
-// other engines live in their own packages and speak to the same context.
+/**
+ * Медиаадаптер для обычного воспроизведения MP4/WebM.
+ *
+ * Намеренно «простой»: он лишь отрисовывает нативный элемент `<video>` и
+ * переводит нативные медиасобытия в события общего FSM. Пакет UI ничего не
+ * знает ни о Remotion, ни о HLS — другие движки живут в собственных пакетах
+ * и взаимодействуют с тем же контекстом.
+ *
+ * Элемент всегда включает `playsInline`, поэтому на мобильных не уходит в
+ * полноэкранный режим iOS, а его размеры растягиваются по контейнеру с
+ * `object-fit: contain`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { Html5VideoProvider, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <Root>
+ *     <Html5VideoProvider src="/media/movie.mp4" crossOrigin="anonymous" />
+ *   </Root>
+ * </PlayerProvider>
+ * ```
+ */
 export function Html5VideoProvider({ src, style, crossOrigin, ...props }: Html5VideoProviderProps) {
   const { videoRef, send } = usePlayerContext();
 

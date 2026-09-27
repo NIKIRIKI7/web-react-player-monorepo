@@ -4,124 +4,77 @@
 
 ```ts
 
-// @public (undocumented)
+// @public
 export interface CaptionCue {
-    // (undocumented)
     endTime: number;
-    // (undocumented)
     id?: string;
-    // (undocumented)
     startTime: number;
-    // (undocumented)
     text: string;
-    // (undocumented)
     words?: WordCue[];
 }
 
-// @public (undocumented)
+// @public
 export interface Chapter {
-    // (undocumented)
     endTime: number;
-    // (undocumented)
     startTime: number;
-    // (undocumented)
     title: string;
 }
 
-// @public (undocumented)
+// @public
 export const createPlayerMachine: () => PlayerMachine;
 
-// @public (undocumented)
+// @public
 export interface Marker {
-    // (undocumented)
     color?: string;
-    // (undocumented)
     endTime: number;
-    // (undocumented)
     label?: string;
-    // (undocumented)
     startTime: number;
-    // (undocumented)
     type: 'sponsor' | 'intro' | 'outro' | 'highlight';
 }
 
-// @public (undocumented)
+// @public
 export interface PlayerActionRecord {
-    // (undocumented)
     timestamp: number;
-    // (undocumented)
     type: string;
-    // (undocumented)
     value?: string | number;
 }
 
-// @public (undocumented)
+// @public
 export interface PlayerContext {
-    // (undocumented)
     activeChapter: Chapter | null;
-    // (undocumented)
     activeCue: CaptionCue | null;
-    // (undocumented)
     activeMarker: Marker | null;
-    // (undocumented)
     ambientMode: boolean;
-    // (undocumented)
     audioGain: number;
-    // (undocumented)
     autoQuality: boolean;
-    // (undocumented)
     brightness: number;
-    // (undocumented)
     bufferedEnd: number;
-    // (undocumented)
     captions: CaptionCue[];
-    // (undocumented)
     captionsEnabled: boolean;
-    // (undocumented)
     chapters: Chapter[];
-    // (undocumented)
     currentFrame: number;
-    // (undocumented)
     currentQuality: VideoQuality | null;
-    // (undocumented)
     currentTime: number;
-    // (undocumented)
     documentPip: boolean;
-    // (undocumented)
     duration: number;
-    // (undocumented)
     durationInFrames: number;
-    // (undocumented)
     error: Error | null;
-    // (undocumented)
     fps: number;
-    // (undocumented)
     fullscreen: boolean;
-    // (undocumented)
     isLongPressSpeedUp: boolean;
-    // (undocumented)
     lastAction: PlayerActionRecord | null;
-    // (undocumented)
     markers: Marker[];
-    // (undocumented)
     muted: boolean;
-    // (undocumented)
     pip: boolean;
-    // (undocumented)
     playbackRate: number;
-    // (undocumented)
     qualities: VideoQuality[];
-    // (undocumented)
     smartPauseReason: 'visibility' | 'intersection' | null;
-    // (undocumented)
     src: string | null;
-    // (undocumented)
     theater: boolean;
-    // (undocumented)
     volume: number;
 }
 
-// @public (undocumented)
+// @public
 export type PlayerEvent = {
     type: 'LOAD';
     src: string;
@@ -219,63 +172,45 @@ export type PlayerEvent = {
     type: 'RESET';
 };
 
-// @public (undocumented)
+// @public
 export type PlayerListener = (snapshot: PlayerSnapshot) => void;
 
-// @public (undocumented)
+// @public
 export class PlayerMachine {
-    // (undocumented)
     dispatch: (event: PlayerEvent) => void;
-    // (undocumented)
     getSnapshot: () => PlayerSnapshot;
-    // (undocumented)
     send: (event: PlayerEvent) => void;
-    // (undocumented)
     subscribe: (listener: PlayerListener) => (() => void);
-    // (undocumented)
     use: (middleware: PlayerMiddleware) => (() => void);
 }
 
-// @public (undocumented)
+// @public
 export type PlayerMiddleware = (event: PlayerEvent, snapshot: PlayerSnapshot, next: (event: PlayerEvent) => void) => void;
 
-// @public (undocumented)
+// @public
 export interface PlayerSnapshot {
-    // (undocumented)
     context: PlayerContext;
-    // (undocumented)
     status: PlayerStatus;
 }
 
-// @public (undocumented)
+// @public
 export type PlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'buffering' | 'ended' | 'error';
 
-// @public (undocumented)
+// @public
 export interface VideoQuality {
-    // (undocumented)
     bitrate?: number;
-    // (undocumented)
     height: number;
-    // (undocumented)
     id: string;
-    // (undocumented)
     label?: string;
-    // (undocumented)
     src?: string;
-    // (undocumented)
     width?: number;
 }
 
-// @public (undocumented)
+// @public
 export interface WordCue {
-    // (undocumented)
     end: number;
-    // (undocumented)
     start: number;
-    // (undocumented)
     word: string;
 }
-
-// (No @packageDocumentation comment for this package)
 
 ```

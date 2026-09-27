@@ -1,3 +1,101 @@
+/**
+ * Headless React-слой видеоплеера Web React Player: контекст состояния,
+ * набор UI-примитивов, раскладка, горячие клавиши и стилизация субтитров.
+ *
+ * Пакет не содержит готового дизайна: каждый примитив экспортируется
+ * отдельно, поэтому их можно комбинировать как конструктор. Единственный
+ * обязательный элемент — {@link PlayerProvider}, который поднимает конечный
+ * автомат из `@web-react-player/core` и синхронизирует его с DOM.
+ *
+ * @packageDocumentation
+ *
+ * @example Минимальный плеер на нативном video-элементе
+ * ```tsx
+ * import { DefaultStandardLayout, Html5VideoProvider, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * export function App() {
+ *   return (
+ *     <PlayerProvider>
+ *       <div style={{ position: 'relative', aspectRatio: '16 / 9' }}>
+ *         <Root>
+ *           <Html5VideoProvider src="/media/movie.mp4" crossOrigin="anonymous" />
+ *           <DefaultStandardLayout />
+ *         </Root>
+ *       </div>
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ *
+ * @example Сборка собственного интерфейса из примитивов
+ * ```tsx
+ * import { usePlayerState, PlayerProvider, Root, PlayButton, TimeDisplay, TimeSlider } from '@web-react-player/ui';
+ *
+ * function MinimalControls() {
+ *   const time = usePlayerState((s) => s.context.currentTime);
+ *   return (
+ *     <div>
+ *       <TimeSlider />
+ *       <TimeDisplay type="current" />
+ *       <PlayButton />
+ *       <span>{time.toFixed(1)}s</span>
+ *     </div>
+ *   );
+ * }
+ *
+ * export function App() {
+ *   return (
+ *     <PlayerProvider>
+ *       <Root>
+ *         <MinimalControls />
+ *       </Root>
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ *
+ * @example Доступ к состоянию и императивным действиям
+ * ```tsx
+ * import { usePlayerContext } from '@web-react-player/ui';
+ *
+ * function JumpButton() {
+ *   const { state, actions, isScrubbing, setIsScrubbing } = usePlayerContext();
+ *   return (
+ *     <button
+ *       type="button"
+ *       disabled={state.context.duration === 0}
+ *       onPointerDown={() => setIsScrubbing(true)}
+ *       onPointerUp={() => {
+ *         setIsScrubbing(false);
+ *         actions.seek(state.context.currentTime + 30);
+ *       }}
+ *     >
+ *       +30 секунд
+ *     </button>
+ *   );
+ * }
+ * ```
+ *
+ * @example Переопределение горячих клавиш
+ * ```tsx
+ * import { PlayerProvider, Root, type HotkeysMap } from '@web-react-player/ui';
+ *
+ * const hotkeys: HotkeysMap = {
+ *   'Shift+P': { handler: (ctx) => ctx.actions.togglePlay(), description: 'Пауза' },
+ *   r: ['seekTo10', 'seekTo20'],
+ *   togglePlay: 'Space',
+ * };
+ *
+ * export function App() {
+ *   return (
+ *     <PlayerProvider>
+ *       <Root hotkeys={hotkeys} keyboardShortcuts idleTimeout={3000} />
+ *     </PlayerProvider>
+ *   );
+ * }
+ * ```
+ */
+
 // Re-export core types for convenience
 export type {
   CaptionCue,
@@ -40,8 +138,10 @@ export {
   compileHotkeyBindings,
   executeCanonicalCommand,
   handleKeyboardShortcut,
+  type ResolvedBinding,
 } from './hotkeys/dispatcher';
 // Hotkeys API
+export type { ParsedKeyChord } from './hotkeys/normalizer';
 export type {
   HotkeyAction,
   HotkeyBindingDescriptor,
@@ -101,4 +201,21 @@ export { formatTime } from './utils/formatTime';
 export type { SlotProps } from './utils/Slot';
 export { Slot } from './utils/Slot';
 
+/**
+ * Флаг готовности пакета `@web-react-player/ui`.
+ *
+ * Константа экспортируется как ранний индикатор того, что бандл собран
+ * корректно: она присутствует только в скомпилированном пакете и позволяет
+ * smoke-тестам и feature-флагам проверить доступность модуля без лишней обвязки.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { UI_PACKAGE_READY } from '@web-react-player/ui';
+ *
+ * if (UI_PACKAGE_READY) {
+ *   console.log('UI-слой загружен');
+ * }
+ * ```
+ */
 export const UI_PACKAGE_READY = true;

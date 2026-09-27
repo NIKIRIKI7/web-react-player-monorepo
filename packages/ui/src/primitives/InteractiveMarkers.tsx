@@ -1,8 +1,33 @@
 import type { CSSProperties } from 'react';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 
+/**
+ * Свойства плавающей кнопки «Пропустить» для интерактивных маркеров.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <InteractiveMarkers className="skip-pill" style={{ right: 32 }} />
+ * ```
+ */
 export interface InteractiveMarkersProps {
+  /**
+   * Дополнительный CSS-класс контейнера.
+   *
+   * @example
+   * ```tsx
+   * <InteractiveMarkers className="skip-pill" />
+   * ```
+   */
   className?: string;
+  /**
+   * Инлайновые стили, перекрывающие значения по умолчанию.
+   *
+   * @example
+   * ```tsx
+   * <InteractiveMarkers style={{ right: 32 }} />
+   * ```
+   */
   style?: CSSProperties;
 }
 
@@ -12,6 +37,29 @@ export interface InteractiveMarkersProps {
 // the TimeSlider. The segment bands themselves are drawn by TimeSlider directly
 // on the timeline track. When a dropdown menu (quality, captions, ...) is open,
 // the pill hides itself so it cannot collide with the menu.
+/**
+ * Плавающая кнопка «Пропустить», которая появляется, когда воспроизведение
+ * находится внутри сегмента маркера (интро, спонсор, аутро).
+ *
+ * Кнопка поднимается над таймлайном при видимых контролах и опускается
+ * в угол при их скрытии, поэтому никогда не перекрывает `TimeSlider`.
+ * Полосы самих сегментов рисует `TimeSlider` прямо на дорожке. Если открыто
+ * какое-либо выпадающее меню (качество, настройки), кнопка скрывается, чтобы
+ * не конфликтовать с меню.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { InteractiveMarkers, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <Root>
+ *     <video src="/media/movie.mp4" />
+ *     <InteractiveMarkers />
+ *   </Root>
+ * </PlayerProvider>
+ * ```
+ */
 export function InteractiveMarkers({ className, style }: InteractiveMarkersProps) {
   const { actions, controlsVisible, isSmall, activeMenu, tier } = usePlayerContext();
   const activeMarker = usePlayerState((s) => s.context.activeMarker);

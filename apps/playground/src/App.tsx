@@ -19,6 +19,10 @@ import { AudioMixerDemo } from './AudioMixerDemo';
 import { MixedScenarioDemo } from './MixedScenarioDemo';
 import { WidgetStudioDemo } from './WidgetStudioDemo';
 
+// exactOptionalPropertyTypes не даёт присвоить optional-пропу явный undefined,
+// поэтому извлекаем непустой набор значений.
+type ExportQuality = NonNullable<ExportOptions['quality']>;
+
 const SAMPLE_TSX_ANIMATION = `
 import React from 'react';
 import { useCurrentFrame, spring, useVideoConfig, AbsoluteFill, staticFile, Img } from 'remotion';
@@ -83,7 +87,7 @@ const RemotionDemo = () => {
   const [suite] = useState(() => createDefaultRemotionSuite());
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
-  const [exportQuality, setExportQuality] = useState<ExportOptions['quality']>('standard');
+  const [exportQuality, setExportQuality] = useState<ExportQuality>('standard');
   const remotionSource = useMemo<Extract<RemotionSource, { type: 'code' }>>(
     () => ({
       type: 'code',
@@ -192,7 +196,7 @@ const RemotionDemo = () => {
           <select
             id="export-quality"
             value={exportQuality}
-            onChange={(e) => setExportQuality(e.target.value as ExportOptions['quality'])}
+            onChange={(e) => setExportQuality(e.target.value as ExportQuality)}
             disabled={isExporting}
             style={{
               padding: '8px 12px',

@@ -16,6 +16,24 @@ import {
 } from './assetResolver';
 import { RemotionCompilerError } from './RemotionCompilerError';
 
+/**
+ * Ошибка компиляции Remotion.
+ *
+ * Также реэкспортируется из этого модуля для удобства импорта рядом с
+ * компилятором, который её выбрасывает.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { RemotionCompilerError } from '@web-react-player/remotion';
+ *
+ * try {
+ *   await compiler.compile(code);
+ * } catch (error) {
+ *   if (error instanceof RemotionCompilerError) console.warn(error.suggestion);
+ * }
+ * ```
+ */
 export { RemotionCompilerError };
 
 function normalizeVirtualModule(moduleValue: unknown): unknown {
@@ -34,9 +52,67 @@ function normalizeVirtualModule(moduleValue: unknown): unknown {
   };
 }
 
+/**
+ * Компилятор TSX, работающий прямо в браузере.
+ *
+ * Исходный код сначала прогоняется через `transformSource` плагинов, затем
+ * транспилируется `sucrase` (преобразования `typescript`, `jsx`, `imports`),
+ * после чего выполняется в изолированной функции с собранной областью
+ * видимости. В область подставляются `react`, `remotion`, `@remotion/media`,
+ * модули, предоставленные плагинами, и виртуальные модули.
+ *
+ * Конфигурация композиции (`fps`, размеры, длительность, аудиомикс)
+ * извлекается из скомпилированного кода, а аудиодорожки разрешаются через
+ * резолвер ресурсов с белым списком протоколов.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { createDefaultRemotionSuite } from '@web-react-player/remotion';
+ *
+ * const { compiler } = createDefaultRemotionSuite();
+ * const { Component, detectedConfig } = await compiler.compile(`
+ *   import { AbsoluteFill } from 'remotion';
+ *   export const Composition = () => <AbsoluteFill>Привет</AbsoluteFill>;
+ * `);
+ * console.log(detectedConfig?.fps);
+ * ```
+ */
 export class BrowserTsxCompiler implements ITsxCompiler {
+  /**
+   * Создаёт компилятор.
+   *
+   * @param pluginManager - Менеджер плагинов, предоставляющий модули и
+   * преобразования исходного кода.
+   * @public
+   * @example
+   * ```ts
+   * const { pluginManager, compiler } = createDefaultRemotionSuite();
+   * ```
+   */
   constructor(private pluginManager: RemotionPluginManager) {}
 
+  /**
+   * Компилирует TSX-код в исполняемый компонент композиции.
+   *
+   * @param code - Исходный код композиции.
+   * @param assets - Карта ресурсов, доступных коду.
+   * @param additionalScope - Дополнительные модули и значения области видимости.
+   * @param options - Параметры разрешения ресурсов и виртуальных модулей.
+   * @returns Компонент и конфигурация, распознанная из кода.
+   * @throws {@link RemotionCompilerError} при синтаксической ошибке, отсутствии
+   * компонента, некорректной конфигурации или сбое во время выполнения.
+   * @public
+   * @example
+   * ```ts
+   * const { Component } = await compiler.compile(
+   *   code,
+   *   { logo: '/media/logo.png' },
+   *   { ASSET_BASE_URL: 'https://cdn.example.com/' },
+   *   { allowedAssetProtocols: ['https:', 'data:'] },
+   * );
+   * ```
+   */
   public async compile(
     code: string,
     assets: Record<string, string> = {},

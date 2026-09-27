@@ -8,8 +8,38 @@ import {
 import { captionStylesToCssVariables } from '../captions/utils';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства панели настройки стиля субтитров {@link CaptionCustomizer}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <CaptionCustomizer isOpen={isOpen} onClose={() => setIsOpen(false)} />
+ * ```
+ */
 export interface CaptionCustomizerProps {
+  /**
+   * Открыта ли панель.
+   *
+   * При `false` компонент отрисовывает `null`, поэтому его можно держать
+   * смонтированным и просто переключать видимость.
+   *
+   * @example
+   * ```tsx
+   * <CaptionCustomizer isOpen={captionSettingsOpen} onClose={closeMenu} />
+   * ```
+   */
   isOpen: boolean;
+  /**
+   * Обработчик закрытия панели.
+   *
+   * Вызывается по кнопке закрытия, клику вне панели и клавише `Escape`.
+   *
+   * @example
+   * ```tsx
+   * onClose={() => setActiveMenu(null)}
+   * ```
+   */
   onClose: () => void;
 }
 
@@ -33,6 +63,21 @@ const FONT_FAMILIES: CaptionFontFamily[] = [
   'cursive',
 ];
 
+/**
+ * Живой предпросмотр стиля субтитров.
+ *
+ * Применяет переданные в свойстве `styles` стили через
+ * {@link captionStylesToCssVariables} к короткой демонстрационной реплике,
+ * не затрагивая настройки плеера.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { CaptionPreviewBox } from '@web-react-player/ui';
+ *
+ * <CaptionPreviewBox styles={{ fontSize: 32, textColor: '#ffffff' }} />
+ * ```
+ */
 export function CaptionPreviewBox({ styles }: { styles: CaptionStylePreferences }) {
   const cssVars = captionStylesToCssVariables(styles);
 
@@ -77,6 +122,33 @@ export function CaptionPreviewBox({ styles }: { styles: CaptionStylePreferences 
   );
 }
 
+/**
+ * Панель настройки стиля субтитров.
+ *
+ * Позволяет выбрать шрифт, размер, цвета текста и фона, прозрачность подложки
+ * и вариант тени. Любое изменение сразу применяется к `context.captionStyles`
+ * и сохраняется в `localStorage` через `setCaptionStyles`, поэтому настройки
+ * переживают перезагрузку страницы и смену видео. Текущий выбор видно в
+ * предпросмотре {@link CaptionPreviewBox}.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { CaptionCustomizer, SettingsMenu, usePlayerContext } from '@web-react-player/ui';
+ *
+ * function CaptionSettings() {
+ *   const { activeMenu, setActiveMenu } = usePlayerContext();
+ *   return (
+ *     <SettingsMenu onOpenSubtitleStyles={() => setActiveMenu('caption-styles')}>
+ *       <CaptionCustomizer
+ *         isOpen={activeMenu === 'caption-styles'}
+ *         onClose={() => setActiveMenu(null)}
+ *       />
+ *     </SettingsMenu>
+ *   );
+ * }
+ * ```
+ */
 export function CaptionCustomizer({ isOpen, onClose }: CaptionCustomizerProps) {
   const { captionStyles, setCaptionStyles, isSmall } = usePlayerContext();
   const [localStyles, setLocalStyles] = useState<CaptionStylePreferences>(captionStyles);

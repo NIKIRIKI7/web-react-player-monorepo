@@ -158,11 +158,69 @@ function MusicTrack({
  *
  * Нейросеть не считает ни кадры, ни громкость: она только описывает
  * `audioMix` в конфиге композиции, а всю покадровую математику делает плагин.
+ *
+ * Обёртка накладывает четыре слоя: визуальную композицию, голос диктора,
+ * музыку с фейдами и ducking, а также звуковые эффекты. Если в конфигурации
+ * нет ни одной дорожки, компонент возвращается без изменений, чтобы не
+ * добавлять лишние слои в дерево рендеринга.
+ *
+ * @public
+ * @example
+ * ```ts
+ * import { createDefaultRemotionSuite, type RemotionCompositionConfig } from '@web-react-player/remotion';
+ *
+ * const { pluginManager } = createDefaultRemotionSuite();
+ * const config: RemotionCompositionConfig = {
+ *   durationInFrames: 300,
+ *   fps: 30,
+ *   width: 1920,
+ *   height: 1080,
+ *   audioMix: {
+ *     voiceover: { src: 'narration.mp3' },
+ *     music: [{ src: 'theme.mp3', loop: true, ducking: true, fadeInFrames: 30 }],
+ *     sfx: [{ src: 'click.mp3', startFrom: 60 }],
+ *   },
+ * };
+ * const Wrapped = pluginManager.applyComponentWrappers(Composition, config);
+ * ```
  */
 export class AudioMixerPlugin implements IRemotionPlugin {
+  /**
+   * Уникальный идентификатор плагина.
+   *
+   * @example
+   * ```ts
+   * plugin.id; // 'remotion-plugin-audio-mixer'
+   * ```
+   */
   public readonly id = 'remotion-plugin-audio-mixer';
+  /**
+   * Отображаемое имя плагина.
+   *
+   * @example
+   * ```ts
+   * plugin.name; // 'Cinematic Audio Mixer'
+   * ```
+   */
   public readonly name = 'Cinematic Audio Mixer';
 
+  /**
+   * Оборачивает компонент композиции слоями аудиодорожек.
+   *
+   * Позиционирование дорожек на таймлайне и обрезка исходных файлов
+   * (`trimStartFrames`/`trimEndFrames`) вычисляются один раз при создании
+   * обёртки, а не на каждом кадре.
+   *
+   * @param Component - Компонент визуальной композиции.
+   * @param config - Конфигурация с аудиомиксом.
+   * @returns Обёрнутый компонент либо исходный, если дорожек нет.
+   * @public
+   * @example
+   * ```ts
+   * const Wrapped = plugin.wrapComponent(Composition, config);
+   * <Wrapped inputProps={{ title: 'Ролик' }} />
+   * ```
+   */
   public wrapComponent(
     Component: React.ComponentType<Record<string, unknown>>,
     config: RemotionCompositionConfig,

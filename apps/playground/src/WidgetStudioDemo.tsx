@@ -10,6 +10,15 @@ import { DefaultStandardLayout, PlayerProvider, Root } from '@web-react-player/u
 import { useMemo, useState } from 'react';
 import { SAMPLE_WIDGETS_PACKAGES } from './widgetsData';
 
+// exactOptionalPropertyTypes не даёт присвоить optional-пропу явный undefined,
+// поэтому извлекаем непустой набор значений.
+type ExportQuality = NonNullable<ExportOptions['quality']>;
+
+// noUncheckedIndexedAccess: первый пакет и первый виджет могут отсутствовать.
+const defaultPackage = SAMPLE_WIDGETS_PACKAGES[0];
+const defaultWidgets = defaultPackage?.widgets ?? [];
+const defaultWidgetId = defaultWidgets[0]?.id ?? 'WordByWordText16x9';
+
 /**
  * Widget Studio — стенд для «Vidora Widget Bundle».
  *
@@ -28,13 +37,11 @@ export const WidgetStudioDemo = () => {
     return created;
   }, []);
 
-  const [selectedWidgetId, setSelectedWidgetId] = useState<string>(
-    SAMPLE_WIDGETS_PACKAGES[0].widgets[0].id,
-  );
+  const [selectedWidgetId, setSelectedWidgetId] = useState<string>(defaultWidgetId);
   const [userProps, setUserProps] = useState<Record<string, unknown>>({});
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
-  const [exportQuality, setExportQuality] = useState<ExportOptions['quality']>('standard');
+  const [exportQuality, setExportQuality] = useState<ExportQuality>('standard');
 
   const selectedWidget = suite.widgetRegistry.get(selectedWidgetId) as VidoraWidgetDefinition;
   const selectedProps = selectedWidget.props ?? [];
@@ -115,7 +122,7 @@ export const WidgetStudioDemo = () => {
           <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest m-0">
             Библиотека
           </h3>
-          {SAMPLE_WIDGETS_PACKAGES[0].widgets.map((w) => (
+          {defaultWidgets.map((w) => (
             <button
               key={w.id}
               type="button"
@@ -191,7 +198,7 @@ export const WidgetStudioDemo = () => {
               </div>
               <select
                 value={exportQuality}
-                onChange={(e) => setExportQuality(e.target.value as ExportOptions['quality'])}
+                onChange={(e) => setExportQuality(e.target.value as ExportQuality)}
                 disabled={isExporting}
                 className="w-full mt-4 p-2 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold outline-none disabled:opacity-50"
               >

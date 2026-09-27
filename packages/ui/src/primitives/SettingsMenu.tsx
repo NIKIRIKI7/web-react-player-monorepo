@@ -1,7 +1,30 @@
 import { type ComponentProps, type CSSProperties, useEffect, useRef, useState } from 'react';
 import { usePlayerContext, usePlayerState } from '../context/PlayerContext';
 
+/**
+ * Свойства единого меню настроек {@link SettingsMenu}.
+ *
+ * Наследует все нативные атрибуты `<div>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <SettingsMenu onOpenSubtitleStyles={() => setActiveMenu('caption-styles')}>
+ *   <CaptionCustomizer isOpen={activeMenu === 'caption-styles'} onClose={close} />
+ * </SettingsMenu>
+ * ```
+ */
 export interface SettingsMenuProps extends ComponentProps<'div'> {
+  /**
+   * Обработчик открытия панели настройки стиля субтитров.
+   *
+   * Если не передан, пункт «Стиль субтитров» в меню не показывается.
+   *
+   * @example
+   * ```tsx
+   * <SettingsMenu onOpenSubtitleStyles={() => setActiveMenu('caption-styles')} />
+   * ```
+   */
   onOpenSubtitleStyles?: () => void;
 }
 
@@ -13,6 +36,31 @@ type SettingsPanel = 'main' | 'quality' | 'speed';
 // Unified gear menu that consolidates quality, playback speed, ambient glow,
 // document PiP and subtitle styling under one dropdown. Only one menu can be
 // open at a time because it participates in the shared `activeMenu` coordinator.
+/**
+ * Единое меню настроек, объединяющее качество, скорость воспроизведения,
+ * фоновое свечение, document PiP и стиль субтитров под одним выпадающим
+ * списком.
+ *
+ * Одновременно открыто может быть только одно меню, поскольку компонент
+ * участвует в общем координаторе `activeMenu`. Скорость выбирается из
+ * пресетов `0.25…2` с шагом `0.25`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { SettingsMenu, usePlayerContext } from '@web-react-player/ui';
+ *
+ * function Menu() {
+ *   const { activeMenu, setActiveMenu } = usePlayerContext();
+ *   return (
+ *     <SettingsMenu
+ *       onOpenSubtitleStyles={() => setActiveMenu('caption-styles')}
+ *       className="settings"
+ *     />
+ *   );
+ * }
+ * ```
+ */
 export function SettingsMenu({
   onOpenSubtitleStyles,
   className,

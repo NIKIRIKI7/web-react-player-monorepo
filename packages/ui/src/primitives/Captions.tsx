@@ -3,9 +3,47 @@ import type { ComponentProps, CSSProperties } from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 
+/**
+ * Свойства дорожки субтитров {@link Captions}.
+ *
+ * Наследует все нативные атрибуты `<section>`.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * <Captions activeWordColor="#38bdf8" passedWordOpacity={0.6} />
+ * ```
+ */
 export interface CaptionsProps extends ComponentProps<'section'> {
+  /**
+   * Цвет слова, которое произносится в текущий момент.
+   *
+   * @defaultValue `'#38bdf8'`
+   * @example
+   * ```tsx
+   * <Captions activeWordColor="#f97316" />
+   * ```
+   */
   activeWordColor?: string;
+  /**
+   * Прозрачность слов, которые уже произнесены.
+   *
+   * @defaultValue `0.7`
+   * @example
+   * ```tsx
+   * <Captions passedWordOpacity={0.4} />
+   * ```
+   */
   passedWordOpacity?: number;
+  /**
+   * CSS-переход, применяемый к состоянию каждого слова.
+   *
+   * @defaultValue `'color 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out'`
+   * @example
+   * ```tsx
+   * <Captions wordTransition="opacity 0.3s linear" />
+   * ```
+   */
   wordTransition?: string;
 }
 
@@ -36,6 +74,30 @@ function renderWords(
   ));
 }
 
+/**
+ * Пословная дорожка субтитров (karaoke-подсветка).
+ *
+ * Отрисовывает активную реплику из `context.activeCue` и для каждого слова
+ * расставляет `data-active` / `data-passed` в зависимости от `currentTime`.
+ * Ссылки на узлы слов обновляются напрямую через `useRef`, поэтому активное
+ * слово подсвечивается без перерисовки дерева React.
+ *
+ * Компонент ничего не показывает в компактной раскладке (`isSmall`) и при
+ * выключенных субтитрах.
+ *
+ * @public
+ * @example
+ * ```tsx
+ * import { Captions, PlayerProvider, Root } from '@web-react-player/ui';
+ *
+ * <PlayerProvider>
+ *   <Root>
+ *     <video src="/media/movie.mp4" />
+ *     <Captions activeWordColor="#22d3ee" passedWordOpacity={0.5} />
+ *   </Root>
+ * </PlayerProvider>
+ * ```
+ */
 export function Captions({
   className,
   style,
