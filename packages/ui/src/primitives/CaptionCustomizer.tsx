@@ -1,4 +1,3 @@
-// cspell:words Customizer
 import { useState } from 'react';
 import {
   type CaptionFontFamily,

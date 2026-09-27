@@ -29,6 +29,7 @@ export default defineConfig({
         'lucide-react',
       ],
       output: {
+        sourcemapExcludeSources: true,
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',

@@ -1,4 +1,3 @@
-// cspell:words Customizer
 // Re-export core types for convenience
 export type {
   CaptionCue,

@@ -16,7 +16,11 @@ export default defineConfig({
       formats: ['es'],
       fileName: () => 'index.js',
     },
-    rollupOptions: {},
+    rollupOptions: {
+      output: {
+        sourcemapExcludeSources: true,
+      },
+    },
     sourcemap: true,
     minify: false,
   },

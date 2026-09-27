@@ -1,4 +1,3 @@
-// cspell:words Segoe Menlo Consolas Neue
 import {
   type CaptionFontFamily,
   type CaptionStylePreferences,

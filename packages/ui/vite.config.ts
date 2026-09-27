@@ -19,6 +19,7 @@ export default defineConfig({
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime', '@web-react-player/core'],
       output: {
+        sourcemapExcludeSources: true,
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',

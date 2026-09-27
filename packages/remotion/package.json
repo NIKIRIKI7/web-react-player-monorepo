@@ -1,6 +1,9 @@
 {
   "name": "@web-react-player/remotion",
   "version": "0.1.0",
+  "description": "Remotion integration suite for Web React Player: in-browser TSX compiler, WebCodecs MP4/WebM exporter, dynamic audio mixer, scenario adapters and widget runtime.",
+  "author": "Никита Горобец",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,21 +14,37 @@
       "default": "./dist/index.js"
     }
   },
+  "keywords": [
+    "react",
+    "player",
+    "remotion",
+    "video-editor",
+    "video-player",
+    "audio-mixer",
+    "motion-graphics",
+    "tsx-compiler",
+    "webcodecs",
+    "canvas-export",
+    "tree-shaking",
+    "browser"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/NIKIRIKI7/web-react-player-monorepo.git",
     "directory": "packages/remotion"
   },
-  "homepage": "https://github.com/NIKIRIKI7/web-react-player-monorepo#readme",
+  "homepage": "https://github.com/NIKIRIKI7/web-react-player-monorepo/tree/main/packages/remotion#readme",
   "bugs": {
     "url": "https://github.com/NIKIRIKI7/web-react-player-monorepo/issues"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "publishConfig": {
     "access": "public"
@@ -36,7 +55,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
-    "test": "echo \"No tests specified for this package yet\""
+    "test": "vitest run",
+    "prepublishOnly": "pnpm --filter @web-react-player/core run build && pnpm --filter @web-react-player/ui run build && pnpm run build && pnpm run test"
   },
   "dependencies": {
     "@remotion/media": "^4.0.527",
@@ -58,6 +78,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "typescript": "^5.8.2",
+    "vitest": "^5.0.1",
     "vite": "^8.3.0",
     "vite-plugin-dts": "^5.1.0"
   }

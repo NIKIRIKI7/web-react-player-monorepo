@@ -1,4 +1,3 @@
-<!-- cspell:disable -->
 # 🛠️ Руководство разработчика (Developer Guide)
 
 Добро пожаловать в монорепозиторий **`web-react-player`**! Этот документ содержит полное описание архитектуры, каталог всех инструментов контроля качества, правила коммитов и пошаговый пайплайн разработки (включая вайб-кодинг с ИИ).
@@ -52,7 +51,6 @@ pnpm dev:app
 | **Biome** | Сверхбыстрый линтер и форматтер (замена ESLint и Prettier) | `pnpm lint` / `pnpm lint:fix` |
 | **TypeScript (5.8+)** | Проверка типов без компиляции файлов | `pnpm typecheck` |
 | **ts-reset** | Устранение «дыр» в типах TS (`JSON.parse` и `.json()` возвращают `unknown`, а не `any`) | Работает автоматически через `src/reset.d.ts` |
-| **CSpell** | Поиск опечаток в коде, комментариях и Markdown | `pnpm lint:spell` |
 | **Knip** | Поиск мертвого кода, неиспользуемых экспортов и забытых пакетов | `pnpm check:knip` |
 | **Syncpack** | Синхронизация версий зависимостей во всех пакетах репозитория | `pnpm check:syncpack` / `pnpm fix:syncpack` |
 | **Dependency Cruiser** | Контроль архитектуры: запрет циклических импортов и утечек из UI в Core | `pnpm check:deps` |
@@ -210,17 +208,12 @@ pnpm lint:fix
 ```
 
 ```bash 
-# 5. Проверка орфографии в пропсах и комментариях (CSpell)
-pnpm lint:spell
-```
-
-```bash 
-# 6. Строгая проверка типов во всех пакетах
+# 5. Строгая проверка типов во всех пакетах
 pnpm typecheck
 ```
 
 ```bash 
-# 7. Запуск юнит-тестов
+# 6. Запуск юнит-тестов
 pnpm test
 ```
 
@@ -267,7 +260,7 @@ pnpm test
    git add .
    git commit -m "feat(core): add playback rate controls to fsm"
    ```
-   *Хук `pre-commit` (Husky + lint-staged) автоматически прогонит Biome и CSpell по staged-файлам.*  
+   *Хук `pre-commit` (Husky + lint-staged) автоматически прогонит Biome по staged-файлам.*  
    *Хук `commit-msg` (Commitlint) заблокирует коммит, если он написан не по стандарту Conventional Commits (со строчной буквы на английском).*
 
 ---
@@ -309,7 +302,6 @@ pnpm test
 | `pnpm clean` | Полное удаление сгенерированных папок `dist` |
 | `pnpm typecheck` | Проверка TypeScript во всех пакетах |
 | `pnpm lint` / `pnpm lint:fix` | Проверка / исправление стиля Biome |
-| `pnpm lint:spell` | Проверка орфографии CSpell |
 | `pnpm check:knip` | Поиск мертвого кода Knip |
 | `pnpm check:syncpack` / `fix:syncpack` | Проверка / синхронизация версий в `package.json` |
 | `pnpm check:deps` | Проверка архитектуры Dependency Cruiser |
