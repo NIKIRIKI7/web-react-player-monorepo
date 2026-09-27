@@ -1,5 +1,11 @@
 # @web-react-player/core
 
+## 1.0.1
+
+### Patch Changes
+
+- Document the public API with TSDoc: every exported type, interface member, class field, method and function now has a Russian description and a runnable usage example, and all three entry points carry `@packageDocumentation`. `createDefaultRemotionSuite` moved to its own module so the bundled declarations keep the package doc comment, and the new `ParsedKeyChord` type is exported for `ResolvedBinding.chord`
+
 ## 1.0.0
 
 ### Major Changes

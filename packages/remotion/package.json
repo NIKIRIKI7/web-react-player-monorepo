@@ -1,6 +1,6 @@
 {
   "name": "@web-react-player/remotion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Remotion integration suite for Web React Player: in-browser TSX compiler, WebCodecs MP4/WebM exporter, dynamic audio mixer, scenario adapters and widget runtime.",
   "author": "Никита Горобец",
   "license": "MIT",
